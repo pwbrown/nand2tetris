@@ -1,4 +1,4 @@
-[Back](../../README.md)
+[Back](../README.md)
 
 # Course 1 Project 1
 
