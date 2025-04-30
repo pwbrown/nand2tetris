@@ -137,3 +137,6 @@ dist
 
 *.bkp
 *.hack
+*.zip
+*.DS_STORE
+*.txt
