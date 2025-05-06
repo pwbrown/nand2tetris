@@ -1,0 +1,22 @@
+{
+  "name": "@pwbrown/hack-assemble",
+  "version": "1.0.0",
+  "main": "./dist/main.js",
+  "bin": {
+    "hack-assemble": "./dist/main.js"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc",
+    "translate": "node dist/main.js"
+  },
+  "keywords": [],
+  "author": "Philip Brown",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
+  }
+}
