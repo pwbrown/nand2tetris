@@ -136,7 +136,9 @@ dist
 .pnp.*
 
 *.bkp
-*.hack
+project6/**/*.hack
+project7/**/*.asm
+project7/bundle/
 *.zip
 *.DS_STORE
 *.txt

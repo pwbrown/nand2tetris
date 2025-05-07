@@ -1,3 +1,9 @@
+/**
+ * Author: Philip Brown
+ * Language: TypeScript
+ * Source Code: https://github.com/pwbrown/n2t/tree/main/project7/src/parser.ts
+ */
+
 import { ARITHMETIC_OPERATOR, MEMORY_SEGMENT, PUSH_POP_OPERATOR } from './constants';
 
 /** Arithmetic Command */
@@ -39,7 +45,7 @@ export const parseLine = (line: string): Command | null => {
 }
 
 /** Parses an arithmetic command (which is just a single operator word) */
-export const parseArithmeticCommand = (words: string[]): ArithmeticCommand => {
+const parseArithmeticCommand = (words: string[]): ArithmeticCommand => {
   return {
     type: 'Arithmetic',
     operator: words[0],
@@ -47,7 +53,7 @@ export const parseArithmeticCommand = (words: string[]): ArithmeticCommand => {
 }
 
 /** Parses a push/pop command */
-export const parsePushPopCommand = (words: string[]): PushPopCommand => {
+const parsePushPopCommand = (words: string[]): PushPopCommand => {
   const [operator, segment, operand] = words;
   /** Validate segment name */
   if (!segment || !MEMORY_SEGMENT[segment]) {

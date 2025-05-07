@@ -6,9 +6,10 @@
     "hack-assemble": "./dist/main.js"
   },
   "scripts": {
-    "clean": "rimraf dist",
+    "clean": "rimraf dist bundle",
     "build": "npm run clean && tsc",
-    "translate": "node dist/main.js"
+    "translate": "node dist/main.js",
+    "bundle": "npm run build && mkdir bundle && cp -a dist/. bundle && mv bundle/main.js bundle/VMTranslator.js && echo 'nodejs' > bundle/lang.txt"
   },
   "keywords": [],
   "author": "Philip Brown",
