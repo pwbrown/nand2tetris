@@ -5,11 +5,10 @@
  */
 
 import { createReadStream } from 'node:fs';
-import { resolve, dirname, join, basename, extname } from 'node:path';
-import { mkdir, stat } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
+import { getFileReferences } from './utils';
 import { Command, parseLine } from './parser';
-import { translateAndWrite } from './translate';
+import { translateAndWrite, TranslateOptions } from './translate';
 
 /** Regular expression to match command line option (format: '--OPT_NAME' or '-OPT_NAME') */
 const OPT_REGEX = /^--?[a-z]+$/i;
@@ -27,55 +26,53 @@ const main = async (processArgs: string[]) => {
       [opt.replace(/^--?/, '').toLowerCase()]: true,
     }), {});
   
-    /** Resolve input file path and check for existence */
-  const inputFile = args[0] ? resolve(args[0]) : undefined;
-  if (!inputFile || !await stat(inputFile)) {
-    throw new Error('Input file was not provided or does not exist');
-  }
-  const inputFileNameNoExt = basename(inputFile, extname(inputFile));
+  /** Retrieve file references */
+  const fileReferences = await getFileReferences(args[0]);
 
-  /** Resolve output file and setup output directory if necessary */
-  let outputFile: string;
-  if (args.length > 1) {
-    outputFile = resolve(args[1]);
-    await mkdir(dirname(outputFile), { recursive: true });
-  } else {
-    const inputFileDir = dirname(inputFile);
-    const outputFileName = `${inputFileNameNoExt}.asm`;
-    outputFile = join(inputFileDir, outputFileName);
-  }
+  /** Parse each input file into a list of VM commands */
+  const translateOptions: TranslateOptions = {
+    argOpts: options,
+    output: fileReferences.outputFilePath,
+    inputs: [],
+    bootstrap: fileReferences.isDir,
+  };
 
-  /** Read input file line-by-line and parse each line into vm commands */
-  const input = createReadStream(resolve(inputFile), { encoding: 'utf-8' });
-  const rl = createInterface({ input, crlfDelay: Infinity });
-  const commands: Command[] = [];
-  const errors: Error[] = [];
-  for await (const line of rl) {
-    try {
-      const command = parseLine(line);
-      /** Empty lines and comment-only lines will be parsed as null */
-      if (command) {
-        commands.push(command);
-      }
-    } catch(e) {
-      /** Only track the first 10 errors */
-      if (errors.length < 10 && e instanceof Error) {
-        errors.push(e);
+  for (const { path, name } of fileReferences.inputFiles) {
+    /** Read input file line-by-line and parse each line into vm commands */
+    const input = createReadStream(path, { encoding: 'utf-8' });
+    const rl = createInterface({ input, crlfDelay: Infinity });
+    const commands: Command[] = [];
+    const errors: Error[] = [];
+    for await (const line of rl) {
+      try {
+        const command = parseLine(line);
+        /** Empty lines and comment-only lines will be parsed as null */
+        if (command) {
+          commands.push(command);
+        }
+      } catch(e) {
+        /** Only track the first 10 errors */
+        if (errors.length < 10 && e instanceof Error) {
+          errors.push(e);
+        }
       }
     }
-  }
-  
-  /** Report parsing errors if necessary */
-  if (errors.length) {
-    console.error('Translator Failed with Errors (Only showing first 10):');
-    errors.forEach((err) => {
-      console.log(`  - ${err.message}`);
-    });
-    process.exit(1);
+    
+    /** Report parsing errors if necessary */
+    if (errors.length) {
+      console.error('Translator Failed with Errors (Only showing first 10):');
+      errors.forEach((err) => {
+        console.log(`  - ${err.message}`);
+      });
+      process.exit(1);
+    }
+
+    /** Add parsed commands and file name as a translation input */
+    translateOptions.inputs.push({ name, commands })
   }
 
   /** Translate the commands into assembly and write to the output file */
-  await translateAndWrite(commands, inputFileNameNoExt, outputFile, options);
+  await translateAndWrite(translateOptions);
 
   console.log('VM Code Translated Successfully!');
 }
