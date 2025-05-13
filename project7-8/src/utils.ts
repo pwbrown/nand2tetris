@@ -21,7 +21,7 @@ export const getFileReferences = async (inputArg: string): Promise<FileReference
   const inputStat = await stat(inputPath);
   /** Handle directory of files */
   if (inputStat.isDirectory()) {
-    const contents = await readdir(inputPath, { recursive: true, withFileTypes: true });
+    const contents = await readdir(inputPath, { withFileTypes: true });
     /** Get just the .vm files */
     const vmFiles = contents.filter((entry) => entry.isFile() && entry.name.endsWith('.vm'));
     if (!vmFiles.length) {
@@ -29,9 +29,9 @@ export const getFileReferences = async (inputArg: string): Promise<FileReference
     }
     return {
       isDir: true,
-      outputFilePath: join(dirname(inputPath), `${basename(inputPath)}.asm`),
+      outputFilePath: join(inputPath, `${basename(inputPath)}.asm`),
       inputFiles: vmFiles.map((entry) => {
-        const path = join(entry.parentPath, entry.name);
+        const path = join(inputPath, entry.name);
         const name = basename(path, extname(path));
         return { path, name };
       }),

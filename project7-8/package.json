@@ -16,8 +16,8 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@types/node": "^22.15.3",
-    "rimraf": "^6.0.1",
+    "@types/node": "^16.18.126",
+    "rimraf": "^5.0.10",
     "typescript": "^5.8.3"
   }
 }
