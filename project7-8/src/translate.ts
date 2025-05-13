@@ -9,8 +9,8 @@ import { ArithmeticCommand, CallCommand, Command, FunctionCommand, GotoCommand, 
 import { MEMORY_SEGMENT } from "./constants";
 import { once } from "node:events";
 
-/** Maximum index value for direct addressing while popping */
-const POP_DIRECT_ADDR_MAX = 0;
+/** Maximum pop operand value to use for direct addressing (this is just an optimization) */
+const POP_DIRECT_ADDR_MAX = 2;
 
 /** Register to use when storing pop command addresses */
 const POP_TEMP_REGISTER = 13;
@@ -55,6 +55,7 @@ export const translateAndWrite = async (options: TranslateOptions) => {
 class Translator {
   private annotate = false; // Toggles comment annotation in the final assembly code
   private firstLine = true; // Controls behavior of leading newline character in assembly code
+  private writeReturn = false; // Indicates if the shared return function should be written to the final assembly code
   private name = ''; // Holds the name of the active file input
   private functionName: string | null = null; // Holds the name of the active function
   private labelIndexes: { [label: string]: number } = {}; // Holds the available index value for labels
@@ -122,6 +123,58 @@ class Translator {
       /** Append the assembly code to the output */
       this.write(translation.assembly.join('\n'));
     }
+  }
+
+  /** Writes the shared return function to the final output */
+  private writeReturnFunction(): void {
+    if (!this.writeReturn) {
+      return;
+    }
+    const assembly: string[] = [
+      // store endframe address
+      '@LCL',
+      'D=M',
+      '@R13',
+      'M=D',
+      // store return address
+      ...this.setDRegToPtrValueMinusOffset('R13', 5),
+      '@R14',
+      'M=D',
+      // put return value for caller's stack (currently at ARG 0)
+      ...this.popToDRegister(),
+      '@ARG',
+      'A=M',
+      'M=D',
+      // Reposition SP
+      '@ARG',
+      'D=M+1',
+      '@SP',
+      'M=D',
+      // Restore THAT
+      ...this.setDRegToPtrValueMinusOffset('R13', 1),
+      '@THAT',
+      'M=D',
+      // Restore THIS
+      ...this.setDRegToPtrValueMinusOffset('R13', 2),
+      '@THIS',
+      'M=D',
+      // Restore ARG
+      ...this.setDRegToPtrValueMinusOffset('R13', 3),
+      '@ARG',
+      'M=D',
+      // Restore LCL
+      ...this.setDRegToPtrValueMinusOffset('R13', 4),
+      '@LCL',
+      'M=D',
+      // goto returnAddr
+      '@R14',
+      'A=M',
+      '0;JMP',
+    ];
+    if (this.annotate) {
+      this.write('// Shared return function');
+    }
+    this.write(assembly.join('\n'));
   }
 
   /** Translate a single command and return the original VM code and the list of assembly lines */
@@ -304,122 +357,86 @@ class Translator {
     /** Setup assembly variable */
     let assembly: string[];
 
-    switch(operator) {
-      /** Add top 2 stack values */
-      case 'add':
-        assembly = [
-          // SP--, D = RAM[SP]
-          ...this.popToDRegister(),
-          // SP--
-          ...this.decrementStackPointer(),
-          // D = D + RAM[SP]
-          'D=D+M',
-          // RAM[SP] = D, SP++
-          ...this.pushFromDRegister(),
-        ];
-        break;
-      /** Subtract top 2 stack values */
-      case 'sub':
-        assembly = [
-          // SP--, D = RAM[SP]
-          ...this.popToDRegister(),
-          // SP--
-          ...this.decrementStackPointer(),
-          // D = RAM[SP] - D
-          'D=M-D',
-          // RAM[SP] = D, SP++
-          ...this.pushFromDRegister(),
-        ];
-        break;
-      /** Get negative of top stack value */
-      case 'neg':
-        assembly = [
-          // SP--
-          ...this.decrementStackPointer(),
-          // D = -RAM[SP]
-          'D=-M',
-          // RAM[SP] = D, SP++
-          ...this.pushFromDRegister(),
-        ];
-        break;
-      /** Equality operator */
-      case 'eq':
-        assembly = [
-          // SP--, D = RAM[SP]
-          ...this.popToDRegister(),
-          // SP--
-          ...this.decrementStackPointer(),
-          // D = D - RAM[SP]
-          'D=D-M',
-          // if (d == 0) push true else push false
-          ...this.pushBooleanOnDCondition(operator),
-        ];
-        break;
-      /** Greater than operator */
-      case 'gt':
-        assembly = [
-          // SP--, D = RAM[SP]
-          ...this.popToDRegister(),
-          // SP--
-          ...this.decrementStackPointer(),
-          // D = RAM[SP] - D
-          'D=M-D',
-          // if (d > 0) push true else push false
-          ...this.pushBooleanOnDCondition(operator),
-        ];
-        break;
-      /** Less than operator */
-      case 'lt':
-        assembly = [
-          // SP--, D = RAM[SP]
-          ...this.popToDRegister(),
-          // SP--
-          ...this.decrementStackPointer(),
-          // D = D - RAM[SP]
-          'D=M-D',
-          // if (d < 0) push true else push false
-          ...this.pushBooleanOnDCondition(operator),
-        ];
-        break;
-      /** And operation */
-      case 'and':
-        assembly = [
-          // SP--, D = RAM[SP]
-          ...this.popToDRegister(),
-          // SP--
-          ...this.decrementStackPointer(),
-          // D = D & RAM[SP]
-          'D=D&M',
-          // RAM[SP] = D, SP++
-          ...this.pushFromDRegister(),
-        ];
-        break;
-      /** Or operation */
-      case 'or':
-        assembly = [
-          // SP--, D = RAM[SP]
-          ...this.popToDRegister(),
-          // SP--
-          ...this.decrementStackPointer(),
-          // D = D | RAM[SP]
-          'D=D|M',
-          // RAM[SP] = D, SP++
-          ...this.pushFromDRegister(),
-        ];
-        break;
-      /** Not operation */
-      case 'not':
-        assembly = [
-          // SP--
-          ...this.decrementStackPointer(),
-          // D = !RAM[SP]
-          'D=!M',
-          // RAM[SP] = D, SP++
-          ...this.pushFromDRegister(),
-        ];
-        break;
-      default:
-        throw new Error(`Translation Error: Unrecognized arithmetic operator '${operator}'`);
+    /** Add top 2 stack values */
+    if (operator === 'add') {
+      assembly = [
+        ...this.popD(),
+        ...this.decSP(),
+        'D=D+M',
+        ...this.pushD(),
+      ];
+    }
+    /** Subtract top 2 stack values */
+    else if (operator === 'sub') {
+      assembly = [
+        ...this.popD(),
+        ...this.decSP(),
+        'D=M-D',
+        ...this.pushD(),
+      ];
+    }
+    /** Get negative of top stack value */
+    else if (operator === 'neg') {
+      assembly = [
+        ...this.decSP(),
+        'D=-M',
+        ...this.pushD(),
+      ];
+    }
+    /** Equality operator */
+    else if (operator === 'eq') {
+      assembly = [
+        ...this.popD(),
+        ...this.decSP(),
+        'D=D-M',
+        ...this.pushBoolWhenD(operator),
+      ];
+    }
+    /** Greater than operator */
+    else if (operator === 'gt') {
+      assembly = [
+        ...this.popD(),
+        ...this.decSP(),
+        'D=M-D',
+        ...this.pushBoolWhenD(operator),
+      ];
+    }
+    /** Less than operator */
+    else if (operator === 'lt') {
+      assembly = [
+        ...this.popD(),
+        ...this.decSP(),
+        'D=M-D',
+        ...this.pushBoolWhenD(operator),
+      ];
+    }
+    /** And operation */
+    else if (operator === 'and') {
+      assembly = [
+        ...this.popD(),
+        ...this.decSP(),
+        'D=D&M',
+        ...this.pushD(),
+      ];
+    }
+    /** Or operation */
+    else if (operator === 'or') {
+      assembly = [
+        ...this.popD(),
+        ...this.decSP(),
+        'D=D|M',
+        ...this.pushD(),
+      ];
+    }
+    /** Not operation */
+    else if (operator === 'not') {
+      assembly = [
+        ...this.decSP(),
+        'D=!M',
+        ...this.pushD(),
+      ];
+    } else {
+      throw new Error(`Translation Error: Unrecognized arithmetic operator '${operator}'`);
     }
 
     return {
@@ -430,45 +447,137 @@ class Translator {
 
   /** Translate push command into assembly */
   private translatePush(command: PushPopCommand): Translation {
-    const { operator, segment, operand } = command;
+    const { operator, segment, operand: i } = command;
+
+    const iNum = parseInt(i, 10);
+    let assembly: string[];
+    
+    /** Static Segment (Use named label and assign value) */
+    if (segment === 'static') {
+      assembly = [
+        ...this.ptrToD(`${this.name}.${i}`), // Not actually a pointer, but the logic is the same
+        ...this.pushD(),
+      ];
+    }
+    /** Constant Segment */
+    else if (segment === 'constant') {
+      assembly = this.push(iNum);
+    }
+    /** Temp segment (Fixed memory segment at RAM[5 + i] up to RAM[12]) */
+    else if (segment === 'temp') {
+      if (isNaN(iNum) || iNum < 0 || iNum > 7) {
+        return throwInvalidIndexError(i, segment, '0-7');
+      }
+      assembly = [
+        ...this.ptrToD(`R${5 + iNum}`),
+        ...this.pushD(),
+      ];
+    }
+    /** Pointer segment (Index 0 = THIS, Index 1 = THAT) */
+    else if (segment === 'pointer') {
+      if (i !== '0' && i !== '1') {
+        return throwInvalidIndexError(i, segment, '0 or 1');
+      }
+      assembly = [
+        ...this.ptrToD(i === '0' ? 'THIS' : 'THAT'),
+        ...this.pushD(),
+      ];
+    }
+    /** All other segments (Associated with labeled address as base) */
+    else {
+      if (isNaN(iNum) || iNum < 0) {
+        return throwInvalidIndexError(i, segment, '>= 0');
+      }
+      assembly = [
+        ...this.ptrToA(MEMORY_SEGMENT[segment], iNum),
+        'D=M',
+        ...this.pushD(),
+      ];
+    }
 
     return {
-      original: `${operator} ${segment} ${operand}`,
-      assembly: [
-        // D = segment value (depends on segment)
-        ...this.setDRegToSegmentValue(segment, operand),
-        // RAM[SP] = D, SP++
-        ...this.pushFromDRegister(),
-      ]
-    }
+      original: `${operator} ${segment} ${i}`,
+      assembly,
+    };
   }
 
   /** Translate pop command into assembly */
   private translatePop(command: PushPopCommand): Translation {
-    const { operator, segment, operand } = command;
+    const { operator, segment, operand: i } = command;
 
     if (segment === 'constant') {
       throw new Error('Translate Error: Cannot pop from the \'constant\' segment');
     }
 
     /** Check operand (i) value */
-    const iNum = parseInt(operand, 10);
+    const iNum = parseInt(i, 10);
     if (isNaN(iNum) || iNum < 0) {
-      return throwInvalidIndexError(operand, segment, '>= 0');
+      return throwInvalidIndexError(i, segment, '>= 0');
+    }
+
+    let assembly: string[];
+
+    /** Static Segment (Use named label and assign value) */
+    if (segment === 'static') {
+      assembly = [
+        ...this.popD(),
+        `@${this.name}.${i}`,
+        'M=D',
+      ];
+    }
+    /** Temp segment (Fixed memory segment at RAM[5 + i] up to RAM[12]) */
+    else if (segment === 'temp') {
+      if (isNaN(iNum) || iNum < 0 || iNum > 7) {
+        return throwInvalidIndexError(i, segment, '0-7');
+      }
+      assembly = [
+        ...this.popD(),
+        `@R${5 + iNum}`,
+        'M=D',
+      ];
+    }
+    /** Pointer segment (Index 0 = THIS, Index 1 = THAT) */
+    else if (segment === 'pointer') {
+      if (i !== '0' && i !== '1') {
+        return throwInvalidIndexError(i, segment, '0 or 1');
+      }
+      assembly = [
+        ...this.popD(),
+        `@${i === '0' ? 'THIS' : 'THAT'}`,
+        'M=D',
+      ];
+    }
+    /** All other segments (Associated with labeled address as base) */
+    else {
+      if (isNaN(iNum) || iNum < 0) {
+        return throwInvalidIndexError(i, segment, '>= 0');
+      }
+      if (iNum <= POP_DIRECT_ADDR_MAX) {
+        assembly = [
+          ...this.popD(),
+          ...this.ptrToA(MEMORY_SEGMENT[segment], iNum, POP_DIRECT_ADDR_MAX),
+          'M=D',
+        ];
+      } else {
+        assembly = [
+          /** Store address in temporary register */
+          ...this.ptrToA(MEMORY_SEGMENT[segment], iNum, POP_DIRECT_ADDR_MAX),
+          'D=A',
+          `@R${POP_TEMP_REGISTER}`,
+          'M=D',
+          /** Pop to D */
+          ...this.popD(),
+          /** Recover address from temp register and store D */
+          `@R${POP_TEMP_REGISTER}`,
+          'A=M',
+          'M=D',
+        ];
+      }
     }
 
     return {
-      original: `${operator} ${segment} ${operand}`,
-      assembly: [
-        // RAM[13] = RAM[SEGMENT_ADDR + i] --or-- N/A
-        ...this.storeSegmentAddrOrBypass(segment, iNum),
-        // SP--, D = RAM[SP]
-        ...this.popToDRegister(),
-        // A = SEGMENT_ADDR_WITH_OFFSET
-        ...this.recoverSegmentAddrToA(segment, iNum),
-        // M = D
-        'M=D'
-      ],
+      original: `${operator} ${segment} ${i}`,
+      assembly,
     };
   }
 
@@ -487,102 +596,137 @@ class Translator {
   }
 
   /************************** ASSEMBLY BUILDERS *******************************/
-  
-  /** Increment the Stack Pointer */
-  private incrementStackPointer(): string[] {
+
+  /** Increment the stack pointer (SP++) */
+  private incSP(): string[] {
     return [
-      // SP++
       '@SP',
       'M=M+1',
     ];
   }
 
-  /** Decrement the Stack Pointer and set A to the new SP value */
-  private decrementStackPointer(): string[] {
+  /** Decrement the Stack Pointer and set A (SP--, A=SP) */
+  private decSP(): string[] {
     return [
-      // SP--
       '@SP',
       'AM=M-1',
     ];
   }
 
-  /** Push the value of the D register to the stack and increment SP */
-  private pushFromDRegister(): string[] {
-    return [
-      // RAM[SP] = D
-      '@SP',
-      'A=M',
-      'M=D',
-      // SP++
-      ...this.incrementStackPointer(),
-    ];
-  }
-  
-  /** Decrements the SP and puts the value at the new SP into the D-Register */
-  private popToDRegister(): string[] {
-    return [
-      // SP--, A = SP
-      ...this.decrementStackPointer(),
-      // D = RAM[SP]
-      'D=M'
-    ];
-  }
-
-  /** Push the value at the pointer label to the stack */
-  private pushPointerValue(label: string): string[] {
-    return [
-      `@${label}`,
-      'D=M',
-      ...this.pushFromDRegister(),
-    ];
-  }
-
-  /** Sets the D Register to the value of a pointer with an offset subtracted */
-  private setDRegToPtrValueMinusOffset(label: string, offset: number): string[] {
-    /** Shorter logic */
-    if (offset === 1) {
+  /**
+   * Put a pointer in the A register with optional subtraction offset (A = RAM[label] - subtract)
+   * @param label pointer label
+   * @param offset offset to apply to the pointer's address
+   * @param threshold max offset value for direct addressing using A register arithmetic
+   */
+  private ptrToA(label: string, offset = 0, threshold = 2): string[] {
+    const neg = offset < 0;
+    const op = neg ? '-' : '+';
+    const posOffset = Math.abs(offset);
+    if (posOffset <= threshold) {
       return [
         `@${label}`,
-        'A=M-1',
-        'D=M',
+        `A=M${posOffset > 0 ? `${op}1` : ''}`,
+        ...(posOffset > 1 ? Array(posOffset - 1).fill(`A=A${op}1`) : []),
       ];
     } else {
       return [
-        `@${offset}`,
+        `@${posOffset}`,
         'D=A',
         `@${label}`,
-        'A=M-D',
-        'D=M',
+        `A=${neg ? 'M-D' : 'D+M'}`,
       ];
     }
   }
 
-  /** Push a boolean value to the stack (true = -1, false = 0) */
-  private pushBoolean(value: boolean): string[] {
+  /** Put a pointer in the D register (D = RAM[label]) */
+  private ptrToD(label: string): string[] {
     return [
-      // RAM[SP] = (-1 | 0)
-      '@SP',
-      'A=M',
-      `M=${value ? -1 : 0}`,
-      // SP++
-      ...this.incrementStackPointer(),
+      `@${label}`,
+      'D=M',
+    ];
+  }
+  
+  /**
+   * Puts the dereferenced pointer value into the D register (D = RAM[RAM[label] (+|-) offset])
+   * @param label pointer label
+   * @param offset optional pointer address offset
+   */
+  private derefPtrToD(label: string, offset = 0): string[] {
+    return [
+      ...this.ptrToA(label, offset),
+      'D=M',
     ];
   }
 
-  /** Pushes a boolean value onto the stack based on the condition of the D register */
-  private pushBooleanOnDCondition = (op: string): string[] => {
-    const trueLabel = this.appendLabelIndex(this.prefixLabel(op));
-    const endLabel = this.appendLabelIndex(this.prefixLabel(`end_${op}`));
+  /** Push the value of the D register to the stack and increment SP */
+  private pushD(): string[] {
     return [
-      // if (D (eq|lt|gt) 0) goto opLabel
+      ...this.ptrToA('SP'),
+      'M=D',
+      ...this.incSP(),
+    ];
+  }
+  
+  /** Decrement the stack pointer and pop the value into the D register */
+  private popD(): string[] {
+    return [
+      ...this.decSP(),
+      'D=M',
+    ];
+  }
+
+  /** Push a pointer to the stack (SP = RAM[label], SP++) */
+  private pushPtr(label: string): string[] {
+    return [
+      ...this.ptrToD(label),
+      ...this.pushD(),
+    ];
+  }
+
+  /** Push a constant value (numeric or boolean) to the stack */
+  private push(value: number | boolean): string[] {
+    /** Push constant numbers */
+    if (typeof value === 'number') {
+      /** Binary numeric digits can be set directly */
+      if (value === 0 || value === 1 || value === -1) {
+        return [
+          ...this.ptrToA('SP'),
+          `M=${value}`,
+          ...this.incSP(),
+        ];
+      } else {
+        return [
+          `@${value}`,
+          'D=A',
+          ...this.pushD(),
+        ];
+      }
+    }
+    /** Push boolean values */
+    else {
+      return [
+        ...this.ptrToA('SP'),
+        `M=${value ? -1 : 0}`,
+        ...this.incSP(),
+      ];
+    }
+  }
+
+  /** Pushes a boolean value onto the stack based on the condition of the D register */
+  private pushBoolWhenD = (cond: 'eq' | 'gt' | 'lt'): string[] => {
+    const trueLabel = this.appendLabelIndex(this.prefixLabel(cond));
+    const endLabel = this.appendLabelIndex(this.prefixLabel(`end_${cond}`));
+    return [
+      // if (D *cond* 0) goto trueLabel
       `@${trueLabel}`,
-      `D;J${op.toUpperCase()}`,
-      // else push false and goto end label
-      ...this.pushBoolean(false),
+      `D;J${cond.toUpperCase()}`,
+      // else push false and goto endLabel
+      ...this.push(false),
       ...this.goto(endLabel),
       // push true
       `(${trueLabel})`,
-      ...this.pushBoolean(true),
+      ...this.push(true),
       // end
       `(${endLabel})`,
     ];
@@ -594,162 +738,6 @@ class Translator {
       `@${label}`,
       '0;JMP',
     ];
-  }
-
-  /**
-   * Returns the assembly code that sets the D register value to the
-   * value in a memory segment at the given offset
-   * @param segment segment name
-   * @param i segment offset
-   */
-  private setDRegToSegmentValue = (segment: string, i: string): string[] => {
-    const iNum = parseInt(i, 10);
-    
-    switch(segment) {
-      /** Static segment (create named label and assign value) */
-      case 'static':
-        return [
-          // D = RAM[Foo.i]
-          `@${this.name}.${i}`,
-          'D=M',
-        ];
-      /** Constant segment (assign operand to the D-Register) */
-      case 'constant':
-        return [
-          // D = i
-          `@${i}`,
-          'D=A',
-        ];
-      /** Temp segment (Fixed memory segment at RAM[5 + i] up to RAM[12]) */
-      case 'temp':
-        if (isNaN(iNum) || iNum < 0 || iNum > 7) {
-          return throwInvalidIndexError(i, segment, '0-7');
-        }
-        return [
-          // D = RAM[5 + i]
-          `@R${5 + iNum}`,
-          'D=M',
-        ];
-      /** Pointer segment (Index 0 = THIS, Index 1 = THAT) */
-      case 'pointer':
-        if (i !== '0' && i !== '1') {
-          return throwInvalidIndexError(i, segment, '0 or 1');
-        }
-        const label = i === '0' ? 'THIS' : 'THAT';
-        return [
-          // D = RAM[THIS|THAT]
-          `@${label}`,
-          'D=M',
-        ];
-      /** All other segments (Associated with labeled address as base) */
-      default:
-        if (isNaN(iNum) || iNum < 0) {
-          return throwInvalidIndexError(i, segment, '>= 0');
-        } else if (iNum <= 2) {
-          /** For small offsets, just increment A directly (3-4 steps) */
-          return [
-            // A = SEGMENT_POINTER
-            `@${MEMORY_SEGMENT[segment]}`,
-            // A = RAM[SEGMENT_POINTER + (0 or 1)]
-            `A=M${iNum > 0 ? '+1' : ''}`,
-            // Optional: A = RAM[SEGMENT_POINTER + 2]
-            ...(iNum === 2 ? ['A=A+1'] : []),
-            // D = RAM[SEGMENT_POINTER + i]
-            'D=M',
-          ];
-        } else {
-          /** For larger offsets, calculate the offset (5 steps) */
-          return [
-            // D = i
-            `@${i}`,
-            `D=A`,
-            // D = RAM[D + segmentPointer]
-            `@${MEMORY_SEGMENT[segment]}`,
-            `A=D+M`,
-            `D=M`
-          ];
-        }
-    }
-  }
-
-  /**
-   * Stores the calculated segment address in a register or returns
-   * no commands if the address does not need to be stored
-   */
-  private storeSegmentAddrOrBypass = (segment: string, i: number): string[] => {
-    switch(segment) {
-      /** These virtual segments do not need to be stored */
-      case 'static':
-      case 'temp':
-      case 'pointer':
-        return [];
-      /** Handle segments with a pointer label */
-      default:
-        /** An index value under this threshold can be manually recovered with less steps */
-        if (i <= POP_DIRECT_ADDR_MAX) {
-          return [];
-        } else {
-          return [
-            // D = i
-            `@${i}`,
-            'D=A',
-            // D = D + segmentPointer
-            `@${MEMORY_SEGMENT[segment]}`,
-            `D=D+M`,
-            // RAM[POP_TEMP_REGISTER] = D
-            `@R${POP_TEMP_REGISTER}`,
-            'M=D',
-          ];
-        }
-    }
-  }
-
-  private recoverSegmentAddrToA(segment: string, i: number) {
-    switch(segment) {
-      /** Access static address directly */
-      case 'static':
-        return [
-          // A = Foo.i
-          `@${this.name}.${i}`,
-        ];
-      /** Access temp address directly */
-      case 'temp':
-        if (i < 0 || i > 7) {
-          return throwInvalidIndexError(i, segment, '0-7');
-        }
-        return [
-          // A = 5 + i
-          `@R${5 + i}`,
-        ];
-      /** Access pointer address directly */
-      case 'pointer':
-        if (i < 0 || i > 1) {
-          return throwInvalidIndexError(i, segment, '0 or 1');
-        }
-        return [
-          // A = THIS|THAT
-          `@${!i ? 'THIS' : 'THAT'}`,
-        ];
-      /** Handle other segments based on the max index setting */
-      default:
-        if (i <= POP_DIRECT_ADDR_MAX) {
-          /** Increment A as many times as needed based on the max */
-          return [
-            // A = RAM[SEG_ADDR + (0 or 1)]
-            `@${MEMORY_SEGMENT[segment]}`,
-            `A=M${i > 0 ? '+1' : ''}`,
-            // A = A + 1 (for i > 1)
-            ...(i > 1 ? Array(i - 1).fill('A=A+1') : []),
-          ];
-        } else {
-          /** Recover the stored address */
-          return [
-            // A = RAM[POP_TEMP_REGISTER]
-            `@R${POP_TEMP_REGISTER}`,
-            'A=M',
-          ];
-        }
-    }
   }
 }
 
