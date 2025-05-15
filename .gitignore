@@ -137,8 +137,8 @@ dist
 
 *.bkp
 project6/**/*.hack
-project7/**/*.asm
-project7/bundle/
+project7-8/**/*.asm
+project7-8/bundle/
 *.zip
 *.DS_STORE
 *.txt
