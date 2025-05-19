@@ -1,5 +1,12 @@
+/**
+ * BaseLexer
+ * Author      : Philip Brown
+ * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/shared/token.ts
+ * Notes       : Modified from https://github.com/pwbrown/ts-monkey/blob/main/src/token/token.ts
+ */
+
 /** Generic coverage of token types found in jack, vm, and hack assembly */
-export enum BaseTokenType {
+export enum TokenType {
     // ************** GENERAL ********************
     Unknown = 'Unknown', // Any unknown/unrecognized character
     Illegal = 'Illegal', // A known illegal character or usage of a character
@@ -68,13 +75,13 @@ export enum BaseTokenType {
 }
 
 /** The data type for an individual token */
-export interface BaseToken {
+export interface Token {
     /** Line number where the token was found in the original source */
     line: number;
     /** Column number where the token starts in the original source */
     col: number;
     /** Token type */
-    type: BaseTokenType;
+    type: TokenType;
     /** Token literal */
     literal: string;
 }

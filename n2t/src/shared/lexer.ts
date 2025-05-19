@@ -1,16 +1,41 @@
 /**
  * BaseLexer
  * Author      : Philip Brown
- * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/shared/base-lexer.ts
+ * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/shared/lexer.ts
  * Notes       : Modified from https://github.com/pwbrown/ts-monkey/blob/main/src/lexer/lexer.ts
  */
 
-import { BaseToken, BaseTokenType } from './base-token';
+import { Token, TokenType } from './token';
 
 /** Default number of spaces associated with a single tab character */
 const DEFAULT_TAB_SIZE = 4;
 
-export class BaseLexer {
+/** List of builtin keywords (for Jack specifically) */
+export const KEYWORDS: { [keyword: string]: TokenType } = {
+    class: TokenType.Class,
+    constructor: TokenType.Constructor,
+    method: TokenType.Method,
+    function: TokenType.Function,
+    int: TokenType.Int,
+    boolean: TokenType.Boolean,
+    char: TokenType.Char,
+    void: TokenType.Void,
+    var: TokenType.Var,
+    static: TokenType.Static,
+    field: TokenType.Field,
+    let: TokenType.Let,
+    do: TokenType.Do,
+    if: TokenType.If,
+    else: TokenType.Else,
+    while: TokenType.While,
+    return: TokenType.Return,
+    true: TokenType.True,
+    false: TokenType.False,
+    null: TokenType.Null,
+    this: TokenType.This,
+}
+
+export class Lexer {
     /** Source input tracking */
     private curLine = 1;  // Current line number within the input
     private curCol = 0;   // Current column number within the current line
@@ -27,7 +52,7 @@ export class BaseLexer {
     }
 
     /** Returns the next token of the input string */
-    public nextToken(): BaseToken {
+    public nextToken(): Token {
         this.skipSpacesAndTabs();
 
         /** Record the starting position of the token */
@@ -35,7 +60,7 @@ export class BaseLexer {
         const col = this.curCol;
 
         /** Shortcut method to generate a token and read a single character (optional) */
-        const newToken = (type: BaseTokenType, literal: string, read = true): BaseToken => {
+        const newToken = (type: TokenType, literal: string, read = true): Token => {
             if (read) {
                 this.readChar();
             }
@@ -44,83 +69,98 @@ export class BaseLexer {
 
         switch(this.char) {
             case '':
-                return newToken(BaseTokenType.Eof, '');
+                return newToken(TokenType.Eof, '');
             case '\n':
                 this.nextLine();
-                return newToken(BaseTokenType.Newline, '\n');
+                return newToken(TokenType.Newline, '\n');
             case '\r':
                 /** Handle CRLF (carriage return line feed) */
                 if (this.peekChar() === '\n') {
                     this.readChar();
                     this.nextLine();
-                    return newToken(BaseTokenType.Newline, '\n');
+                    return newToken(TokenType.Newline, '\n');
                 } else {
-                    return newToken(BaseTokenType.Illegal, '\r');
+                    return newToken(TokenType.Illegal, '\r');
                 }
             case '/':
                 const peekChar = this.peekChar();
                 if (peekChar === '/' || peekChar === '*') {
                     const [comment, commentType] = this.readComment();
-                    return newToken(commentType, comment);
+                    return newToken(commentType, comment, false);
                 } else {
-                    return newToken(BaseTokenType.Div, '/');
+                    return newToken(TokenType.Div, '/');
                 }
             case '(':
-                return newToken(BaseTokenType.LParen, '(');
+                return newToken(TokenType.LParen, '(');
             case ')':
-                return newToken(BaseTokenType.RParen, ')');
+                return newToken(TokenType.RParen, ')');
             case '[':
-                return newToken(BaseTokenType.LBrack, '[');
+                return newToken(TokenType.LBrack, '[');
             case ']':
-                return newToken(BaseTokenType.RBrack, ']');
+                return newToken(TokenType.RBrack, ']');
             case '{':
-                return newToken(BaseTokenType.LBrace, '{');
+                return newToken(TokenType.LBrace, '{');
             case '}':
-                return newToken(BaseTokenType.RBrace, '}');
+                return newToken(TokenType.RBrace, '}');
             case ',':
-                return newToken(BaseTokenType.Comma, ',');
+                return newToken(TokenType.Comma, ',');
             case ';':
-                return newToken(BaseTokenType.Semi, ';');
+                return newToken(TokenType.Semi, ';');
             case '=':
                 if (this.peekChar() === '=') {
                     this.readChar();
-                    return newToken(BaseTokenType.Equal, '==');
+                    return newToken(TokenType.Equal, '==');
                 } else {
-                    return newToken(BaseTokenType.Assign, '=');
+                    return newToken(TokenType.Assign, '=');
                 }
             case '.':
-                return newToken(BaseTokenType.Period, '.');
+                return newToken(TokenType.Period, '.');
             case '+':
-                return newToken(BaseTokenType.Plus, '+');
+                return newToken(TokenType.Plus, '+');
             case '-':
-                return newToken(BaseTokenType.Minus, '-');
+                return newToken(TokenType.Minus, '-');
             case '*':
-                return newToken(BaseTokenType.Mult, '*');
+                return newToken(TokenType.Mult, '*');
             case '&':
-                return newToken(BaseTokenType.And, '&');
+                return newToken(TokenType.And, '&');
             case '|':
-                return newToken(BaseTokenType.Or, '|');
+                return newToken(TokenType.Or, '|');
             case '~':
-                return newToken(BaseTokenType.Neg, '~');
+                return newToken(TokenType.Neg, '~');
             case '<':
                 if (this.peekChar() === '=') {
                     this.readChar();
-                    return newToken(BaseTokenType.Lte, '<=');
+                    return newToken(TokenType.Lte, '<=');
                 } else {
-                    return newToken(BaseTokenType.Lt, '<');
+                    return newToken(TokenType.Lt, '<');
                 }
             case '>':
                 if (this.peekChar() === '=') {
                     this.readChar();
-                    return newToken(BaseTokenType.Gte, '>=');
+                    return newToken(TokenType.Gte, '>=');
                 } else {
-                    return newToken(BaseTokenType.Gt, '>');
+                    return newToken(TokenType.Gt, '>');
                 }
             case '@':
-                return newToken(BaseTokenType.At, '@');
+                return newToken(TokenType.At, '@');
+            case '"':
+                return newToken(TokenType.StringConst, this.readString());
             default:
-                /** TODO Handle complex types */
-                return newToken(BaseTokenType.Unknown, this.char);
+                /** Parse Number */
+                if (isDigit(this.char)) {
+                    return newToken(TokenType.IntConst, this.readDigits(), false);
+                }
+                /** Parse Identifier/Keyword */
+                else if (isLetter(this.char)) {
+                    const ident = this.readIdentifier();
+                    if (KEYWORDS[ident]) {
+                        return newToken(KEYWORDS[ident], ident, false);
+                    } else {
+                        return newToken(TokenType.Ident, ident, false);
+                    }
+                } else {
+                    return newToken(TokenType.Unknown, this.char);
+                }
         }
     }
 
@@ -159,10 +199,10 @@ export class BaseLexer {
     /** Read any characters surrounded by double quotes */
     private readString() {
         const start = this.pos + 1;
-        /** Read the initial quotes and read up until the ending quotes */
+        /** Read the initial quotes and read up until the ending quotes or newline (not allowed) */
         do {
             this.readChar();
-        } while (this.char && this.char !== '"');
+        } while (this.char && this.char !== '"' && this.char !== '\n');
         const end = this.pos;
         return this.input.substring(start, end);
     }
@@ -178,7 +218,7 @@ export class BaseLexer {
     }
 
     /** Reads different types of comments */
-    private readComment(): [comment: string, type: BaseTokenType] {
+    private readComment(): [comment: string, type: TokenType] {
         this.readChar();
         const cur = this.char;
         const peek = this.peekChar();
@@ -190,30 +230,32 @@ export class BaseLexer {
             }
             const end = this.pos;
             const comment = this.input.substring(start, end).trim();
-            return [comment, BaseTokenType.InlineComment];
+            return [comment, TokenType.InlineComment];
         }
         /** Handle multiline comments */
         else {
-            let type = BaseTokenType.MultiComment;
+            let type = TokenType.MultiComment;
             if (peek === '*') {
-                type = BaseTokenType.DocComment;
+                type = TokenType.DocComment;
                 this.readChar();
             }
             const start = this.pos + 1;
-            while (
-                this.char && (
-                    this.char !== '*' ||
-                    this.peekChar() === '/'
-                )
-            ) {
+            while (this.char && (this.char !== '*' || this.peekChar() !== '/')) {
                 if (this.char === '\n') {
                     this.nextLine();
                 }
                 this.readChar();
             }
             const end = this.pos;
-            const comment = this.input.substring(start, end).trim();
-            /** Read in the final asterisk character before returning */
+            /** Get comment string and remove newlines, extra whitespace, and leading asterisks */
+            const comment = this.input
+                .substring(start, end)
+                .trim()
+                .split('\n')
+                .map((line) => line.trim().replace(/^[*]+/, '').trim())
+                .join(' ');
+            /** Read in the final asterisk and slash characters before returning */
+            this.readChar();
             this.readChar();
             return [comment, type];
         }
