@@ -82,7 +82,7 @@ describe('Shared - Lexer', () => {
         @R10
         M=D
 
-        // main loop
+        /* main loop */
         (LOOP)
             @R10
             D=M
@@ -93,6 +93,10 @@ describe('Shared - Lexer', () => {
             @LOOP
             0;JMP
 
+        /** 
+         * Another
+         * comment
+         */
         (END)
             @END
             0;JMP
@@ -125,7 +129,7 @@ describe('Shared - Lexer', () => {
             // Empty Line
             [TokenType.Newline, '\n'],
             // // main loop
-            [TokenType.InlineComment, 'main loop'],
+            [TokenType.MultiComment, 'main loop'],
             [TokenType.Newline, '\n'],
             // (LOOP)
             [TokenType.LParen, '('],
@@ -171,6 +175,9 @@ describe('Shared - Lexer', () => {
             [TokenType.Ident, 'JMP'],
             [TokenType.Newline, '\n'],
             // Empty Line
+            [TokenType.Newline, '\n'],
+            // Comment
+            [TokenType.DocComment, 'Another comment'],
             [TokenType.Newline, '\n'],
             // (END)
             [TokenType.LParen, '('],
