@@ -42,7 +42,7 @@ The `C` instruction is used for performing calculations using the CPU's ALU chip
 | `A`      | Value is stored in the A-Register                          |
 | `AM`     | Value is stored in the A-Register and Memory\[A\]          |
 | `AD`     | Value is stored in the A-Register and D-Register           |
-| `AMD`    | Value is stored in A-Register, Memory\[A\], and D-Register |
+| `ADM`    | Value is stored in A-Register, Memory\[A\], and D-Register |
 
 **_ALL Possible Operations_**
 
