@@ -1,6 +1,12 @@
+/**
+ * Assembly Parser
+ * Author      : Philip Brown
+ * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/assemble/parser.ts
+ */
+
 import { BaseParser } from "../shared/base-parser";
 import { TokenType } from "../shared/token";
-import { COMPUTATION, DEST, JUMP } from "./constants";
+import { COMPUTATION, DEST_ORDER, JUMP } from "./constants";
 
 /** Address Instruction */
 export interface AInstruction {
@@ -142,9 +148,6 @@ export class Parser extends BaseParser {
             return null;
         }
         /** Validate components */
-        if (dest && !DEST[dest]) {
-            return this.tokenError(token, `invalid destination '${dest}'`);
-        }
         if (!COMPUTATION[comp]) {
             return this.tokenError(token, `invalid computation '${comp}'`);
         }
@@ -155,7 +158,7 @@ export class Parser extends BaseParser {
             type: 'C',
             line: token.line,
             dest,
-            destBin: DEST[dest || 'null'],
+            destBin: getDestBin(dest || 'null'),
             comp,
             compBin: COMPUTATION[comp],
             jump,
@@ -188,4 +191,19 @@ export class Parser extends BaseParser {
             label,
         });
     }
+}
+
+/** Receives a destination string in any order and returns the binary representation */
+export const getDestBin = (destStr: string): string => {
+    if (destStr === 'null') {
+        return '000';
+    }
+    const bits: string[] = ['0', '0', '0'];
+    for (let i = 0; i < destStr.length; i += 1) {
+        const destInd = DEST_ORDER.indexOf(destStr[i]);
+        if (destInd !== -1) {
+            bits[destInd] = '1';
+        }
+    }
+    return bits.join('');
 }

@@ -1,3 +1,9 @@
+/**
+ * Base Parser
+ * Author      : Philip Brown
+ * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/shared/base-parser.ts
+ */
+
 import { Lexer } from "./lexer";
 import { Token, TokenType } from "./token";
 

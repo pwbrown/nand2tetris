@@ -5,6 +5,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc -p tsconfig.build.json",
+    "n2t": "node dist/n2t.js",
     "test": "jest"
   },
   "keywords": [],

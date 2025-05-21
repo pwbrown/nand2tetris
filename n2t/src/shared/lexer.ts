@@ -1,5 +1,5 @@
 /**
- * BaseLexer
+ * Lexer
  * Author      : Philip Brown
  * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/shared/lexer.ts
  * Notes       : Modified from https://github.com/pwbrown/ts-monkey/blob/main/src/lexer/lexer.ts

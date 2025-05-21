@@ -1,3 +1,9 @@
+/**
+ * Assembly Constants
+ * Author      : Philip Brown
+ * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/assemble/constants.ts
+ */
+
 /** Symbols with reserved addresses */
 export const RESERVED_SYMBOL: { [sym: string]: number } = {
   /** Reserved Registers */
@@ -30,16 +36,7 @@ export const RESERVED_SYMBOL: { [sym: string]: number } = {
 }
 
 /** Map of possible destination strings to their appropriate binary representation */
-export const DEST: { [dest: string]: string } = {
-  'null': '000',
-  'M': '001',
-  'D': '010',
-  'DM': '011',
-  'A': '100',
-  'AM': '101',
-  'AD': '110',
-  'ADM': '111',
-}
+export const DEST_ORDER: string[] = ['A', 'D', 'M'];
 
 /** Map of ALL possible computation strings to their corresponding binary */
 export const COMPUTATION: { [comp: string]: string } = {
