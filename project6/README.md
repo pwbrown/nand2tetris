@@ -6,14 +6,18 @@ This project involves building a Hack Assembler that is capable of assembling Ha
 
 ## Installation
 
-1. Navigate to the project directory: `cd project6`
+1. Navigate to the n2t directory: `cd n2t`
 2. Install [nvm (Node Version Manager)](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating)
 3. Install the correct nodejs version: `nvm install`
 4. Install dependencies: `npm install`
-5. Build the assembler: `npm run build`
+5. Build the CLI tool: `npm run build`
 
 ## Usage
 
-```
-npm run assemble -- input.asm output.hack
+```sh
+# Assemble all .asm files into .hack files recursively within a directory
+npm run n2t -- ../project6/files
+
+# Assemble an individual .asm file into .hack file
+npm run n2t -- ../project6/files/Add.asm
 ```

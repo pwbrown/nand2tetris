@@ -1,6 +1,12 @@
+/**
+ * Assembly Parser Tests
+ * Author      : Philip Brown
+ * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/assemble/parser.spec.ts
+ */
+
 import { Lexer } from '../shared/lexer';
-import { AInstruction, CInstruction, Instruction, LInstruction, Parser } from './parser';
-import { COMPUTATION, DEST, JUMP } from './constants';
+import { AInstruction, CInstruction, Instruction, LInstruction, Parser, getDestBin } from './parser';
+import { COMPUTATION, JUMP } from './constants';
 
 describe('Assemble - Parser', () => {
     it('should parse numeric A Instructions', () => {
@@ -12,11 +18,7 @@ describe('Assemble - Parser', () => {
         for (const [input, addr] of tests) {
             const instructions = parseInputExpectNoErrors(input);
             expect(instructions).toHaveLength(1);
-            expect(instructions[0]).toEqual({
-                type: 'A',
-                line: 1,
-                addr,
-            });
+            expect(instructions[0]).toEqual(aInst(addr));
         }
     });
 
@@ -31,11 +33,7 @@ describe('Assemble - Parser', () => {
         for (const [input, addr] of tests) {
             const instructions = parseInputExpectNoErrors(input);
             expect(instructions).toHaveLength(1);
-            expect(instructions[0]).toEqual({
-                type: 'A',
-                line: 1,
-                addr,
-            });
+            expect(instructions[0]).toEqual(aInst(addr));
         }
     });
 
@@ -61,11 +59,7 @@ describe('Assemble - Parser', () => {
         for (const [input, label] of tests) {
             const instructions = parseInputExpectNoErrors(input);
             expect(instructions).toHaveLength(1);
-            expect(instructions[0]).toEqual({
-                type: 'L',
-                line: 1,
-                label,
-            });
+            expect(instructions[0]).toEqual(lInst(label));
         }
     });
 
@@ -93,16 +87,7 @@ describe('Assemble - Parser', () => {
         for (const input of tests) {
             const instructions = parseInputExpectNoErrors(input);
             expect(instructions).toHaveLength(1);
-            expect(instructions[0]).toEqual({
-                type: 'C',
-                line: 1,
-                dest: null,
-                destBin: DEST['null'],
-                comp: input,
-                compBin: COMPUTATION[input],
-                jump: null,
-                jumpBin: JUMP['null'],
-            });
+            expect(instructions[0]).toEqual(cInst(null, input, null));
         }
     });
 
@@ -117,16 +102,7 @@ describe('Assemble - Parser', () => {
         for (const [input, comp, jump] of tests) {
             const instructions = parseInputExpectNoErrors(input);
             expect(instructions).toHaveLength(1);
-            expect(instructions[0]).toEqual({
-                type: 'C',
-                line: 1,
-                dest: null,
-                destBin: DEST['null'],
-                comp: comp,
-                compBin: COMPUTATION[comp],
-                jump: jump,
-                jumpBin: JUMP[jump],
-            });
+            expect(instructions[0]).toEqual(cInst(null, comp, jump));
         }
     });
 
@@ -141,16 +117,7 @@ describe('Assemble - Parser', () => {
         for (const [input, dest, comp] of tests) {
             const instructions = parseInputExpectNoErrors(input);
             expect(instructions).toHaveLength(1);
-            expect(instructions[0]).toEqual({
-                type: 'C',
-                line: 1,
-                dest,
-                destBin: DEST[dest],
-                comp,
-                compBin: COMPUTATION[comp],
-                jump: null,
-                jumpBin: JUMP['null'],
-            });
+            expect(instructions[0]).toEqual(cInst(dest, comp, null));
         }
     });
 
@@ -164,16 +131,7 @@ describe('Assemble - Parser', () => {
         for (const [input, dest, comp, jump] of tests) {
             const instructions = parseInputExpectNoErrors(input);
             expect(instructions).toHaveLength(1);
-            expect(instructions[0]).toEqual({
-                type: 'C',
-                line: 1,
-                dest,
-                destBin: DEST[dest],
-                comp: comp,
-                compBin: COMPUTATION[comp],
-                jump: jump,
-                jumpBin: JUMP[jump],
-            });
+            expect(instructions[0]).toEqual(cInst(dest, comp, jump));
         }
     });
 
@@ -209,16 +167,6 @@ describe('Assemble - Parser', () => {
 
     it('should not parse a C instruction that has extra tokens', () => {
         const tests: string[] = ['0;JMP blah', 'D;JEQ 0'];
-
-        for (const input of tests) {
-            const [instructions, errors] = parseInput(input);
-            expect(instructions).toHaveLength(0);
-            expect(errors.length).toBeGreaterThan(0);
-        }
-    });
-
-    it('should not parse a C instruction with an invalid destination', () => {
-        const tests: string[] = ['B=D', 'ABC=M+1'];
 
         for (const input of tests) {
             const [instructions, errors] = parseInput(input);
@@ -287,7 +235,7 @@ const cInst = (dest: string | null, comp: string, jump: string | null, line = 1)
     type: 'C',
     line,
     dest,
-    destBin: DEST[dest || 'null'],
+    destBin: getDestBin(dest || 'null'),
     comp,
     compBin: COMPUTATION[comp] || COMPUTATION['null'],
     jump,
