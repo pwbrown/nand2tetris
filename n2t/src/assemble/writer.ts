@@ -5,8 +5,8 @@
  */
 
 import { createWriteStream, WriteStream } from 'node:fs';
-import { Instruction } from './parser';
 import { once } from 'node:events';
+import { Instruction } from './instruction';
 import { RESERVED_SYMBOL } from './constants';
 
 export class Writer {
