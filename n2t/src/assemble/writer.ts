@@ -4,16 +4,12 @@
  * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/assemble/writer.ts
  */
 
-import { createWriteStream, WriteStream } from 'node:fs';
-import { once } from 'node:events';
+import { BaseWriter } from '../shared/base-writer';
 import { Instruction } from './instruction';
 import { RESERVED_SYMBOL } from './constants';
 
-export class Writer {
-    private outputStream: WriteStream | null = null;
-    private firstLine = true;
+export class Writer extends BaseWriter {
     private symbolsProcessed = false;
-    private linesWritten = 0;
 
     /** Symbol Tracking */
     private symbolMap = new Map<string, string>();
@@ -21,20 +17,13 @@ export class Writer {
 
     constructor(
         private instructions: Instruction[],
-        private outputFile: string,
+        outputFile: string,
     ) {
+        super(outputFile);
         /** Initialize symbol map with reserved symbols */
         Object.entries(RESERVED_SYMBOL).forEach(([sym, addrNum]) => {
             this.symbolMap.set(sym, toBinaryAddress(addrNum));
         });
-    }
-
-    /** Get the output file writer */
-    private get writer() {
-        if (!this.outputStream) {
-            this.outputStream = createWriteStream(this.outputFile, { encoding: 'utf-8' });
-        }
-        return this.outputStream;
     }
 
     /** Iterates through all instructions to build the symbol map */
@@ -94,20 +83,8 @@ export class Writer {
         }
 
         /** Close the output file */
-        this.writer.end();
-        await once(this.writer, 'close');
-        this.outputStream = null;
-    }
-
-    /** Write a line to the output file */
-    private writeLine(binary: string) {
-        if (!this.firstLine) {
-            this.writer.write('\n');
-        } else {
-            this.firstLine = false;
-        }
-        this.writer.write(binary);
-        this.linesWritten += 1;
+        const linesWritten = await this.closeOutput();
+        return linesWritten;
     }
 }
 
