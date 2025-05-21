@@ -27,6 +27,9 @@ export class Parser extends BaseParser {
             else if (this.curTokenIs(TokenType.Return)) {
                 this.parseReturnCommand();
             }
+            else if (this.curTokenIs(TokenType.If)) {
+                this.parseIfCommand();
+            }
             else if(this.curTokenIs(TokenType.Ident)) {
                 const literal = this.curToken.literal;
                 switch(literal) {
@@ -35,9 +38,6 @@ export class Parser extends BaseParser {
                         break;
                     case 'goto':
                         this.parseGotoCommand();
-                        break;
-                    case 'if':
-                        this.parseIfCommand();
                         break;
                     case 'call':
                         this.parseCallCommand();
@@ -212,9 +212,11 @@ export class Parser extends BaseParser {
         const token = this.curToken;
         /** Parse memory segment */
         if (
-            !this.peekTokenIs(TokenType.Ident) &&
-            !this.peekTokenIs(TokenType.Static) &&
-            !this.peekTokenIs(TokenType.This) &&
+            (
+                !this.peekTokenIs(TokenType.Ident) &&
+                !this.peekTokenIs(TokenType.Static) &&
+                !this.peekTokenIs(TokenType.This)
+            ) ||
             !MEMORY_SEGMENT[this.peekToken.literal]
         ) {
             this.tokenError(this.peekToken, `expected valid segment name but got '${this.peekToken.literal}'`);
