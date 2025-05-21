@@ -4,38 +4,10 @@
  * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/assemble/parser.ts
  */
 
-import { BaseParser } from "../shared/base-parser";
-import { TokenType } from "../shared/token";
-import { COMPUTATION, DEST_ORDER, JUMP } from "./constants";
-
-/** Address Instruction */
-export interface AInstruction {
-    type: 'A';
-    line: number;
-    addr: string | number;
-}
-
-/** Computational Instruction */
-export interface CInstruction {
-    type: 'C';
-    line: number;
-    dest: string | null;
-    destBin: string;
-    comp: string;
-    compBin: string;
-    jump: string | null;
-    jumpBin: string;
-}
-
-/** Label Instruction */
-export interface LInstruction {
-    type: 'L';
-    line: number;
-    label: string;
-}
-
-/** Instruction */
-export type Instruction = AInstruction | CInstruction | LInstruction;
+import { BaseParser } from '../shared/base-parser';
+import { TokenType } from '../shared/token';
+import { COMPUTATION, DEST_ORDER, JUMP } from './constants';
+import { Instruction } from './instruction';
 
 /** Assembly Parser */
 export class Parser extends BaseParser {

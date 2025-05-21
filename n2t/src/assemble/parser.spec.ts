@@ -5,8 +5,9 @@
  */
 
 import { Lexer } from '../shared/lexer';
-import { AInstruction, CInstruction, Instruction, LInstruction, Parser, getDestBin } from './parser';
+import { Parser, getDestBin } from './parser';
 import { COMPUTATION, JUMP } from './constants';
+import { AInstruction, CInstruction, LInstruction, Instruction } from './instruction';
 
 describe('Assemble - Parser', () => {
     it('should parse numeric A Instructions', () => {

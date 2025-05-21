@@ -1,9 +1,15 @@
+/**
+ * Assemble
+ * Author      : Philip Brown
+ * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/assemble/assemble.ts
+ */
+
 import { readFile } from 'node:fs/promises';
-import { Lexer } from '../shared/lexer';
-import { FileReferences } from '../utils';
-import { Parser } from './parser';
 import { join } from 'node:path';
+import { Parser } from './parser';
 import { Writer } from './writer';
+import { FileReferences } from '../utils';
+import { Lexer } from '../shared/lexer';
 
 /** Individually parses and assembles all hack .asm files into .hack binary files */
 export const assemble = async (references: FileReferences) => {
