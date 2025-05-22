@@ -11,7 +11,7 @@ import { stat, readdir } from 'node:fs/promises';
 type Args = string[];
 
 /** Command line options map */
-interface Options {
+export interface Options {
     [opt: string]: boolean;
 }
 
