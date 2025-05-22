@@ -39,6 +39,7 @@ export class BaseWriter {
         if (!this.firstLine) {
             this.writer.write('\n');
         } else {
+            binary = binary.trim();
             this.firstLine = false;
         }
         this.writer.write(binary);

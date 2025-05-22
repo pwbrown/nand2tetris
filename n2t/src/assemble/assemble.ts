@@ -32,7 +32,7 @@ export const assemble = async (references: FileReferences) => {
         const outputFile = join(ref.dir, `${ref.name}.hack`);
         const writer = new Writer(instructions, outputFile);
         writer.buildSymbolMap();
-        await writer.writeAssembly();
+        await writer.writeBinary();
 
         console.error('Finished assembling hack assembly file:');
         console.error(`  -- Input  : ${ref.path}`);

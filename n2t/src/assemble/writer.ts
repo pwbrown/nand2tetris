@@ -61,10 +61,10 @@ export class Writer extends BaseWriter {
         this.symbolsProcessed = true;
     }
 
-    /** Iterates through all the instructions to write the final assembly */
-    public async writeAssembly() {
+    /** Iterates through all the assembly instructions to write the final hack binary */
+    public async writeBinary() {
         if (!this.symbolsProcessed) {
-            throw new Error('Must call buildSymbolMap before writeAssembly');
+            throw new Error('Must call buildSymbolMap before writeBinary');
         }
 
         for (const instruction of this.instructions) {

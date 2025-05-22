@@ -5,6 +5,7 @@
  */
 
 import { assemble } from "./assemble/assemble";
+import { translate } from "./translate/translate";
 import { getFileReferences, parseOptions } from "./utils";
 
 const main = async (processArgs: string[]) => {
@@ -21,9 +22,10 @@ const main = async (processArgs: string[]) => {
     /** Switch between extensions */
     switch(references.ext as string) {
         case '.jack':
+            throw new Error('Not Implemented yet');
         case '.vm':
-            console.error('Not Implemented Yet');
-            process.exit(1);
+            await translate(references, options);
+            break;
         case '.asm':
             await assemble(references);
             break;
