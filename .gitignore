@@ -139,6 +139,7 @@ dist
 project6/**/*.hack
 project7/**/*.asm
 project8/**/*.asm
+project9/**/*.vm
 *.zip
 *.DS_STORE
 *.txt
