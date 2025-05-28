@@ -1,0 +1,100 @@
+// Keeps track of the state of a single game tile
+class Tile {
+    field int num;      // Number representation
+    field int row, col; // Current tile position
+    field String text;  // Tile text (2 digit number)
+    field boolean sel;  // Indicates if the tile is selected
+
+    // Initialize a tile and paint it on the screen
+    constructor Tile new(
+        int initNum,
+        String initText,
+        int initRow,
+        int initCol
+    ) {
+        let num = initNum;
+        let text = initText;
+        let row = initRow;
+        let col = initCol;
+        let sel = false;
+
+        do draw(false);
+        return this;
+    }
+
+    // Get tile number
+    method int getNum() {
+        return num;
+    }
+
+    // Move the tile to a new position
+    method void move(int rowOffset, int colOffset) {
+        // Erase the tile from the screen
+        do draw(true);
+        // Set new position
+        let row = row + rowOffset;
+        let col = col + colOffset;
+        // Draw tile at new position
+        do draw(false);
+        return;
+    }
+
+    // Toggle the selection state of the tile
+    method void toggleSelection() {
+        // Erase the box first
+        do drawBox(true);
+        // Update selection state
+        let sel = ~sel;
+        // Draw new box
+        do drawBox(false);
+        return;
+    }
+
+    // Draw (or erase) the tile on the screen at the current row and col
+    method void draw(boolean erase) {
+        var int cRow, cCol;
+
+        // Draw the tile box
+        do drawBox(erase);
+
+        // Determine cursor position (refer to notes.drawio)
+        let cRow = (row * 5) + 4;       // 4 is (box_offset(2) + global_offset(2))
+        let cCol = ((col + 5) * 7) + 2; // 5 is global left offset
+        
+        // Insert or remove text
+        do Output.moveCursor(cRow, cCol);
+        if (erase) {
+            do Output.printString("  ");
+        } else {
+            do Output.printString(text);
+        }
+        
+        return;
+    }
+
+    // Draws (or erases) the tile box
+    method void drawBox(boolean erase) {
+        var int offset, bx, by;
+        
+        // Determine top left of tile box (refer to notes.drawio diagram)
+        let bx = (col + 5) * 56;      // 5 represents extra left padding to right-align grid
+        let by = (row * 55) + 3 + 22; // 22 represents extra top padding to center grid
+
+        // Determine thickness offset (4 will apply 4 extra pixels of thickness)
+        if (sel) { let offset = 4; } else { let offset = 0; }
+        
+        // Decide if the tile should be painted or erased
+        do Screen.setColor(~erase);
+
+        // Draw upper line (top left to top right w/ offset)
+        do Screen.drawRectangle(bx, by, (bx + 48), (by + offset));
+        // Draw lower line (bottom left to bottom right)
+        do Screen.drawRectangle(bx, (by + 48 - offset), (bx + 48), (by + 48));
+        // Draw left line (top left to bottom left)
+        do Screen.drawRectangle(bx, by, (bx + offset), (by + 48));
+        // Draw right line (top right to bottom right)
+        do Screen.drawRectangle((bx + 48 - offset), by, (bx + 48), (by + 48));
+        
+        return;
+    }
+}
