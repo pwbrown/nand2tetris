@@ -2,7 +2,7 @@
  * Class   : Tile
  * Purpose : Controls game tile rendering, selection state, and movement operations
  * Author  : Philip Brown
- * Source  : https://github.com/pwbrown/nand2tetris/project9/tile-puzzle/Tile.jack
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/sliding-puzzle/Tile.jack
  */
 
 class Tile {
@@ -39,8 +39,6 @@ class Tile {
 
     // Dispose the tile
     method void dispose() {
-        // erase the tile
-        do draw(true);
         // dispose text string
         do text.dispose();
         return;

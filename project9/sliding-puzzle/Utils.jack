@@ -2,7 +2,7 @@
  * Class   : Utils
  * Purpose : Utility functions for extended math operations and array helpers
  * Author  : Philip Brown
- * Source  : https://github.com/pwbrown/nand2tetris/project9/tile-puzzle/Utils.jack
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/sliding-puzzle/Utils.jack
  */
 
 class Utils {
@@ -63,5 +63,25 @@ class Utils {
             let i = i + 1;
         }
         return sum;
+    }
+
+    // Behaves similarly to how the DOM keyup even works
+    // Waits for a key to be pressed, and then waits for it to be released
+    // before returning the key value
+    function char onKeyUp() {
+        var char waitKey, finalKey;
+
+        // Wait for key to be pressed
+        while (waitKey = 0) {
+            let waitKey = Keyboard.keyPressed();
+        }
+
+        let finalKey = waitKey;
+
+        // Wait for no key to be pressed
+        while (~(waitKey = 0)) {
+            let waitKey = Keyboard.keyPressed();
+        }
+        return finalKey;
     }
 }

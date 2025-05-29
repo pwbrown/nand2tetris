@@ -1,0 +1,84 @@
+/*
+ * Class   : Controller
+ * Purpose : Initializes the grid and listens for key presses to make grid changes
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/sliding-puzzle/Controller.jack
+ */
+
+class Controller {
+    field Grid grid;
+
+    constructor Controller new() {
+        var char seed;
+
+        // Draw the start instructions and prompt the user for input
+        do Menu.drawTitle();
+        do Menu.drawStartInstructions();
+        let seed = Utils.onKeyUp();
+
+        // Clear the screen and redraw the menu before building the grid and starting the game
+        do Screen.clearScreen();
+        do Menu.drawTitle();
+        do Menu.drawGameInstructions();
+
+        // Initialize the grid with the user input character as a seed
+        let grid = Grid.new(seed);
+
+        return this;
+    }
+
+    method void dispose() {
+        do grid.dispose();
+        return;
+    }
+
+    // Initiate the main controller loop
+    method void loop() {
+        var boolean quit, moved;
+        var String message;
+        var char key;
+        let quit = false;
+        while (~quit) {
+            let moved = false;
+            // Wait for a key to be pressed
+            let key = Utils.onKeyUp();
+
+            // Q Key = quit the game
+            if (key = 113) {
+                let quit = true;
+                let message = "Goodbye!";
+            }
+            // Up Arrow
+            if (key = 131) {
+                do grid.changeSelection(0);
+            }
+            // Right Arrow
+            if (key = 132) {
+                do grid.changeSelection(1);
+            }
+            // Down Arrow
+            if (key = 133) {
+                do grid.changeSelection(2);
+            }
+            // Left Arrow
+            if (key = 130) {
+                do grid.changeSelection(3);
+            }
+            // Space Bar
+            if (key = 32) {
+                do grid.moveSelectedTile();
+                let moved = true;
+            }
+
+            // Check for game completion if a tile was moved
+            if (moved & grid.isCorrect()) {
+                let quit = true;
+                let message = "You Won!!";
+            }
+        }
+
+        do Menu.drawFinalMessage(message);
+        do message.dispose();
+        return;
+    }
+}
