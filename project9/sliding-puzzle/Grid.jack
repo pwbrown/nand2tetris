@@ -2,7 +2,7 @@
  * Class   : Grid
  * Purpose : Initializes a list of 15 tiles and handles tile selection and movement operations
  * Author  : Philip Brown
- * Source  : https://github.com/pwbrown/nand2tetris/project9/tile-puzzle/Grid.jack
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/sliding-puzzle/Grid.jack
  */
 
 class Grid {
@@ -107,36 +107,40 @@ class Grid {
     }
 
     // Move the currently selected tile towards the empty position (if possible)
-    method void moveSelectedTile(int direction) {
-        var int pos, newPos, rowOff, colOff;
+    // returns true if the tile was moved
+    method boolean moveSelectedTile() {
+        var int pos, dir, rowOff, colOff;
+        var boolean move, search;
         // Get the position of the selected tile
         let pos = selected.getGridPos();
-        let newPos = Grid.getNewPos(pos, direction);
-        // Can only move the tile into the empty position
-        if (newPos = emptyPos) {
+        let move = false;
+        let search = true;
+        // Search for the empty position around the tile
+        let dir = 0;
+        while (search) {
+            if (Grid.getNewPos(pos, dir) = emptyPos) {
+                let move = true;
+                let search = false;
+            } else {
+                let dir = dir + 1;
+            }
+            if (dir > 3) {
+                let search = false;
+            }
+        }
+
+        if (move) {
             let rowOff = 0;
             let colOff = 0;
-            // Move up
-            if (direction = 0) {
-                let rowOff = -1;
-            }
-            // Move right
-            if (direction = 1) {
-                let colOff = 1;
-            }
-            // Move down
-            if (direction = 2) {
-                let rowOff = 1;
-            }
-            // Move right
-            if (direction = 3) {
-                let colOff = -1;
-            }
+            if (dir = 0) { let rowOff = -1; } // Up
+            if (dir = 1) { let colOff = 1; }  // Right
+            if (dir = 2) { let rowOff = 1; }  // Down            
+            if (dir = 3) { let colOff = -1; } // Right
             do selected.move(rowOff, colOff);
             // Set empty position to where the selection used to be
             let emptyPos = pos;
         }
-        return;
+        return move;
     }
 
     // Utility function to get the new position given a current position and a direction

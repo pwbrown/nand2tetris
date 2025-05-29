@@ -2,13 +2,15 @@
  * Class   : Main
  * Purpose : Entrypoint of the application. Initializes the game controller and starts the loop
  * Author  : Philip Brown
- * Source  : https://github.com/pwbrown/nand2tetris/project9/tile-puzzle/Main.jack
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/sliding-puzzle/Main.jack
  */
 
 class Main {
     function void main() {
         var Controller controller;
         let controller = Controller.new();
+        do controller.loop();
+        do controller.dispose();
         return;
     }
 }

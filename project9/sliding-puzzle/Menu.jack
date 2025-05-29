@@ -1,0 +1,64 @@
+/*
+ * Class   : Menu
+ * Purpose : Functions for rendering the menu
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/sliding-puzzle/Menu.jack
+ */
+
+class Menu {
+    // Draw the game title
+    function void drawTitle() {
+        do Output.moveCursor(1, 10);
+        do Output.printString("Sliding Puzzle");
+        do Screen.setColor(true);
+        do Screen.drawLine(10, 8, 250, 8);
+        do Screen.drawLine(10, 22, 250, 22);
+        return;
+    }
+
+    // Draw the initial start instructions to prompt for user input
+    function void drawStartInstructions() {
+        do Output.moveCursor(3, 10);
+        do Output.printString("Press any key");
+        do Output.moveCursor(4, 7);
+        do Output.printString("to start the puzzle");
+        return;
+    }
+
+    // Draw the game instructions
+    function void drawGameInstructions() {
+        // Print game objective
+        do Output.moveCursor(3, 1);
+        do Output.printString("Objective:");
+        do Output.moveCursor(4, 3);
+        do Output.printString("Place the tiles in ascending");
+        do Output.moveCursor(5, 3);
+        do Output.printString("order from top left to");
+        do Output.moveCursor(6, 3);
+        do Output.printString("bottom right");
+
+        // Print controls
+        do Output.moveCursor(8, 1);
+        do Output.printString("Controls:");
+        do Output.moveCursor(9, 3);
+        do Output.printString("- Use arrow keys to select");
+        do Output.moveCursor(10, 3);
+        do Output.printString("  a different tile");
+        do Output.moveCursor(11, 3);
+        do Output.printString("- Press space bar to move");
+        do Output.moveCursor(12, 3);
+        do Output.printString("  the selected tile into");
+        do Output.moveCursor(13, 3);
+        do Output.printString("  the empty space");
+        do Output.moveCursor(14, 3);
+        do Output.printString("- Press Q to quit the game");
+        return;
+    }
+
+    // Print the final message to the screen
+    function void drawFinalMessage(String message) {
+        do Output.moveCursor(18, 6);
+        do Output.printString(message);
+        return;
+    }
+}
