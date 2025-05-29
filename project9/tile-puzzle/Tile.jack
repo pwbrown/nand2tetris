@@ -1,6 +1,12 @@
-// Keeps track of the state of a single game tile
+/*
+ * Class   : Tile
+ * Purpose : Controls game tile rendering, selection state, and movement operations
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/tile-puzzle/Tile.jack
+ */
+
 class Tile {
-    field int num;      // Number representation
+    field int num;      // Number representation (zero-indexed)
     field int row, col; // Current tile position
     field String text;  // Tile text (2 digit number)
     field boolean sel;  // Indicates if the tile is selected
@@ -8,23 +14,46 @@ class Tile {
     // Initialize a tile and paint it on the screen
     constructor Tile new(
         int initNum,
-        String initText,
-        int initRow,
-        int initCol
+        int initPos
     ) {
+        var int num1Ind;
         let num = initNum;
-        let text = initText;
-        let row = initRow;
-        let col = initCol;
+        let num1Ind = num + 1;
+        // Initialize displayed text
+        let text = String.new(2);
+        if (num1Ind < 10) {
+            let text = text.appendChar(48);           // Leading 0
+            let text = text.appendChar(num1Ind + 48); // Actual number
+        } else {
+            let text = text.appendChar(49);                  // Leading 1
+            let text = text.appendChar((num1Ind - 10) + 48); // Second digit
+        }
+        // Initialize row and column from the position (assuming 4x4 grid)
+        let row = initPos / 4;
+        let col = Utils.mod(initPos, 4);
         let sel = false;
 
         do draw(false);
         return this;
     }
 
-    // Get tile number
-    method int getNum() {
-        return num;
+    // Dispose the tile
+    method void dispose() {
+        // erase the tile
+        do draw(true);
+        // dispose text string
+        do text.dispose();
+        return;
+    }
+
+    // Get position within the 4x4 grid (0 <= pos <= 15)
+    method int getGridPos() {
+        return ((row * 4) + col);
+    }
+
+    // Checks if the tile is in the correct position
+    method boolean isCorrectPos() {
+        return (num = getGridPos());
     }
 
     // Move the tile to a new position

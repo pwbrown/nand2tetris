@@ -1,0 +1,156 @@
+/*
+ * Class   : Grid
+ * Purpose : Initializes a list of 15 tiles and handles tile selection and movement operations
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/tile-puzzle/Grid.jack
+ */
+
+class Grid {
+    field Array items;
+    field int emptyPos;
+    field Tile selected;
+
+    constructor Grid new(int seed) {
+        var int i, sel;
+        var Array positions;
+        // Generate a list of random positions
+        let positions = Utils.randomGridPositions(seed);
+
+        // Fill the items array with tiles
+        let items = Array.new(15);
+        let i = 0;
+        while (i < 15) {
+            let items[i] = Tile.new(i, positions[i]);
+            let i = i + 1;
+        }
+        // Set empty position and dispose the positions array
+        let emptyPos = positions[15];
+        do positions.dispose();
+
+        // Select the top left tile by default
+        let sel = 0;
+        if (emptyPos = 0) {
+            let sel = 1;
+        }
+        let selected = getTileAtPos(sel);
+        do selected.toggleSelection();
+
+        return this;
+    }
+
+    // Dipose all tiles and dipose the items array
+    method void dispose() {
+        var int i;
+        let i = 0;
+        while (i < 15) {
+            // reuse selected field to help with disposal
+            let selected = items[i];
+            do selected.dispose();
+            let i = i + 1;
+        }
+        do items.dispose();
+        return;
+    }
+
+    // Return the tile in the items array that corresponds with the grid position
+    method Tile getTileAtPos(int pos) {
+        var int i;
+        var Tile tile;
+        while (i < 15) {
+            let tile = items[i];
+            if (tile.getGridPos() = pos) {
+                return tile;
+            }
+            let i = i + 1;
+        }
+        return null;
+    }
+
+    // Change current selection based on a direction number
+    method void changeSelection(int direction) {
+        var int pos, newPos;
+        // Get the position of the selected tile
+        let pos = selected.getGridPos();
+        let newPos = Grid.getNewPos(pos, direction);
+        // Ignore wall hits
+        if (pos = newPos) {
+            return;
+        }
+        // Handle skipping over empty space
+        if (newPos = emptyPos) {
+            let newPos = Grid.getNewPos(newPos, direction);
+        }
+        // Handle case where the empty space skip hits a wall
+        if (newPos = emptyPos) {
+            return;
+        }
+        // Deselect the current tile and select a new tile
+        do selected.toggleSelection();
+        let selected = getTileAtPos(newPos);
+        do selected.toggleSelection();
+        return;
+    }
+
+    // Move the currently selected tile towards the empty position (if possible)
+    method void moveSelectedTile(int direction) {
+        var int pos, newPos, rowOff, colOff;
+        // Get the position of the selected tile
+        let pos = selected.getGridPos();
+        let newPos = Grid.getNewPos(pos, direction);
+        // Can only move the tile into the empty position
+        if (newPos = emptyPos) {
+            let rowOff = 0;
+            let colOff = 0;
+            // Move up
+            if (direction = 0) {
+                let rowOff = -1;
+            }
+            // Move right
+            if (direction = 1) {
+                let colOff = 1;
+            }
+            // Move down
+            if (direction = 2) {
+                let rowOff = 1;
+            }
+            // Move right
+            if (direction = 3) {
+                let colOff = -1;
+            }
+            do selected.move(rowOff, colOff);
+            // Set empty position to where the selection used to be
+            let emptyPos = pos;
+        }
+        return;
+    }
+
+    // Utility function to get the new position given a current position and a direction
+    function int getNewPos(int pos, int direction) {
+        // Up
+        if (direction = 0) {
+            if (pos > 3) {
+                return pos - 4;
+            }
+        }
+        // Right
+        if (direction = 1) {
+            if (Utils.mod(pos, 4) < 3) {
+                return pos + 1;
+            }
+        }
+        // Down
+        if (direction = 2) {
+            if (pos < 12) {
+                return pos + 4;
+            }
+        }
+        // Left
+        if (direction = 3) {
+            if (Utils.mod(pos, 4) > 0) {
+                return pos - 1;
+            }
+        }
+
+        return pos;
+    }
+}
