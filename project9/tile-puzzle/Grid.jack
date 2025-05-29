@@ -52,6 +52,21 @@ class Grid {
         return;
     }
 
+    // Checks if the grid is in the correct final configuration
+    method boolean isCorrect() {
+        var int i;
+        var Tile tile;
+        let i = 0;
+        while (i < 15) {
+            let tile = items[i];
+            if (~tile.isCorrectPos()) {
+                return false;
+            }
+            let i = i + 1;
+        }
+        return true;
+    }
+
     // Return the tile in the items array that corresponds with the grid position
     method Tile getTileAtPos(int pos) {
         var int i;
