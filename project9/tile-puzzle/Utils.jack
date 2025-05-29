@@ -1,0 +1,45 @@
+/*
+ * Class   : Utils
+ * Purpose : Utility functions for extended math operations and array helpers
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/tile-puzzle/Utils.jack
+ */
+
+class Utils {
+    // Modulus Operator (num1 % num2)
+    function int mod(int num1, int num2) {
+        var int quot;
+        let quot = num1 / num2;
+        return num1 - (num2 * quot);
+    }
+
+    // Returns an array of integers from 0 to 15 shuffled in a random order
+    // Uses pre-shuffled strings containing the letters A-P to make generating
+    // the final array easier.
+    function Array randomGridPositions(int seed) {
+        var String posString;
+        var Array positions;
+        var int num, i;
+        let num = Utils.mod(seed, 10);
+        // Get position string based on the seed value
+        if (num = 0) { let posString = "NDOHLGJAKEBFCMIP"; }
+        if (num = 1) { let posString = "AGPOKBFCDHNJILME"; }
+        if (num = 2) { let posString = "JIFPBCKGMENHOADL"; }
+        if (num = 3) { let posString = "KOEBFNAGDHMPICJL"; }
+        if (num = 4) { let posString = "ONGPDBIJHKMFALEC"; }
+        if (num = 5) { let posString = "COHGMDFLBEJNKPAI"; }
+        if (num = 6) { let posString = "INBPLGFKDMECJAOH"; }
+        if (num = 7) { let posString = "CEHOANKGIFBJMLDP"; }
+        if (num = 8) { let posString = "BIDGJALPEMHNOFKC"; }
+        if (num = 9) { let posString = "JHFKLMCIDEAPOGNB"; }
+        // Fill position array with char int values
+        let positions = Array.new(16);
+        let i = 0;
+        while (i < 16) {
+            let positions[i] = posString.charAt(i) - 65; // 65 is the int associated with A
+            let i = i + 1;
+        }
+        do posString.dispose();
+        return positions;
+    }
+}

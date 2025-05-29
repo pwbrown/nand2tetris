@@ -1,34 +1,14 @@
+/*
+ * Class   : Main
+ * Purpose : Entrypoint of the application. Initializes the game controller and starts the loop
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/tile-puzzle/Main.jack
+ */
+
 class Main {
     function void main() {
-        var Tile selected;
-        var int i;
-        // Initialize grid
-        var Array grid;
-        let grid = Array.new(16);
-        
-        // Row 1
-        let grid[0] = Tile.new(1, "01", 0, 0);
-        let grid[1] = Tile.new(2, "02", 0, 1);
-        let grid[2] = Tile.new(3, "03", 0, 2);
-        let grid[3] = Tile.new(4, "04", 0, 3);
-        // Row 2
-        let grid[4] = Tile.new(5, "05", 1, 0);
-        let grid[5] = Tile.new(6, "06", 1, 1);
-        let grid[6] = Tile.new(7, "07", 1, 2);
-        let grid[7] = null;
-
-        let i = 0;
-        let selected = grid[i];
-        do selected.toggleSelection();
-        while (i < 3) {
-            do Sys.wait(1000);
-            do selected.toggleSelection();
-            let i = i + 1;
-            let selected = grid[i];
-            do selected.toggleSelection();
-        }
-        do Sys.wait(1000);
-        do selected.move(1, 0);
+        var Controller controller;
+        let controller = Controller.new();
         return;
     }
 }

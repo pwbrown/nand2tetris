@@ -1,0 +1,70 @@
+/*
+ * Class   : Controller
+ * Purpose : Initializes the grid and listens for key presses to make grid changes
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/project9/tile-puzzle/Controller.jack
+ */
+
+class Controller {
+    field Grid grid;
+
+    constructor Controller new() {
+        let grid = Grid.new(1234);
+
+        // SIMULATION
+
+        // Select right
+        do Sys.wait(1000);
+        do grid.changeSelection(1);
+
+        // Select right over empty space
+        do Sys.wait(1000);
+        do grid.changeSelection(1);
+
+        // Select down 2 times
+        do Sys.wait(1000);
+        do grid.changeSelection(2);
+        do Sys.wait(1000);
+        do grid.changeSelection(2);
+
+        // Select left
+        do Sys.wait(1000);
+        do grid.changeSelection(3);
+        
+        // Select up
+        do Sys.wait(1000);
+        do grid.changeSelection(0);
+
+        // Move selected tile up
+        do Sys.wait(1000);
+        do grid.moveSelectedTile(0);
+
+        // Trying to move left should not do anything
+        do Sys.wait(1000);
+        do grid.moveSelectedTile(3);
+
+        // Move selected tile back down
+        do Sys.wait(1000);
+        do grid.moveSelectedTile(2);
+
+        // Select tile left of empty space (left 1 and up 1)
+        do Sys.wait(1000);
+        do grid.changeSelection(3);
+        do grid.changeSelection(0);
+
+        // Move tile to the right
+        do Sys.wait(1000);
+        do grid.moveSelectedTile(1);
+
+        // Move tile to the left
+        do Sys.wait(1000);
+        do grid.moveSelectedTile(3);
+
+        return this;
+    }
+
+    method void dispose() {
+        do grid.dispose();
+        return;
+    }
+}
