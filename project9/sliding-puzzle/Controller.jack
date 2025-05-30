@@ -66,14 +66,16 @@ class Controller {
             }
             // Space Bar
             if (key = 32) {
-                do grid.moveSelectedTile();
-                let moved = true;
+                let moved = grid.moveSelectedTile();
             }
 
             // Check for game completion if a tile was moved
-            if (moved & grid.isCorrect()) {
-                let quit = true;
-                let message = "You Won!!";
+            // If statements are nested to allows for short ciruiting
+            if (moved) {
+                if (grid.isCorrect()) {
+                    let quit = true;
+                    let message = "You Won!!";
+                }
             }
         }
 
