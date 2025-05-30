@@ -16,32 +16,47 @@ class Utils {
     // Returns an array of integers from 0 to 15 shuffled in a random order
     // Uses pre-shuffled strings containing the letters A-P to make generating
     // the final array easier. (NOTE: Used https://codebeautify.org/shuffle-letters to generate shuffled strings)
+    // NOTE: I discovered while working on this project that not all 15-puzzles are solvable,
+    // so I wrote a helper script in JavaScript that utilizes an existing algorithm to generate random solvable
+    // puzzles and auto generate the Jack code block seen below
+    // Helper script source: https://github.com/pwbrown/nand2tetris/project9/scripts/generate-solvable-puzzles.js
     function Array randomGridPositions(int seed) {
         var String posString;
         var Array positions;
         var int num, i;
-        let num = Utils.mod(seed, 20);
-        // Get position string based on the seed value
-        if (num = 0) { let posString = "NDOHLGJAKEBFCMIP"; }
-        if (num = 1) { let posString = "AGPOKBFCDHNJILME"; }
-        if (num = 2) { let posString = "JIFPBCKGMENHOADL"; }
-        if (num = 3) { let posString = "KOEBFNAGDHMPICJL"; }
-        if (num = 4) { let posString = "ONGPDBIJHKMFALEC"; }
-        if (num = 5) { let posString = "COHGMDFLBEJNKPAI"; }
-        if (num = 6) { let posString = "INBPLGFKDMECJAOH"; }
-        if (num = 7) { let posString = "CEHOANKGIFBJMLDP"; }
-        if (num = 8) { let posString = "BIDGJALPEMHNOFKC"; }
-        if (num = 9) { let posString = "JHFKLMCIDEAPOGNB"; }
-        if (num = 10) { let posString = "MGPIANEJOBFCLKDH"; }
-        if (num = 11) { let posString = "PDHJEBMCFALINKGO"; }
-        if (num = 12) { let posString = "HBEPGLMODFCIJKAN"; }
-        if (num = 13) { let posString = "LAJBFEGDCHPKMNIO"; }
-        if (num = 14) { let posString = "MBLOPIDJGNHEACFK"; }
-        if (num = 15) { let posString = "GFKHDOPLENCBJIMA"; }
-        if (num = 16) { let posString = "LEMPJKNDBCHAOGFI"; }
-        if (num = 17) { let posString = "IMEHFLCJAGNPBDKO"; }
-        if (num = 18) { let posString = "IPNHKEDFCOAMGBLJ"; }
-        if (num = 19) { let posString = "AHGIOMDCENJLPBFK"; }
+        /*************** Start of Generated Code ****************/
+        let num = Utils.mod(seed, 30);
+        if (num = 0) { let posString = "LBDOEHNPFICAKJMG"; }
+        if (num = 1) { let posString = "JEAIDLHOFGMBCKPN"; }
+        if (num = 2) { let posString = "MNIAFHLBDKCOGJPE"; }
+        if (num = 3) { let posString = "IBGPEMHKNOFLACDJ"; }
+        if (num = 4) { let posString = "CKIEBANLPHGDMFOJ"; }
+        if (num = 5) { let posString = "JECMDLAGIBHFPOKN"; }
+        if (num = 6) { let posString = "HDALOMJFBCGKIEPN"; }
+        if (num = 7) { let posString = "GOHALKCDEFPBMNIJ"; }
+        if (num = 8) { let posString = "LOJMFACIDKBHPNGE"; }
+        if (num = 9) { let posString = "MJGCBLOKINPDEHAF"; }
+        if (num = 10) { let posString = "CBEALIGHFJPNMKDO"; }
+        if (num = 11) { let posString = "LOKMAPDHJCIEGBNF"; }
+        if (num = 12) { let posString = "NGIKELFAJOBHCDPM"; }
+        if (num = 13) { let posString = "JFEAKBCOGHPLDIMN"; }
+        if (num = 14) { let posString = "PNBCIOLKJFMADGHE"; }
+        if (num = 15) { let posString = "BHJAKMLGINCOEDPF"; }
+        if (num = 16) { let posString = "BMIJOLEDFGCAHPKN"; }
+        if (num = 17) { let posString = "EGHINLDFBJCOPAMK"; }
+        if (num = 18) { let posString = "ALDOEFIGBKMHNJPC"; }
+        if (num = 19) { let posString = "EDPJLHIONKAMFCGB"; }
+        if (num = 20) { let posString = "BNOMLHPGDKJACFEI"; }
+        if (num = 21) { let posString = "HLONKIACJMBFGPDE"; }
+        if (num = 22) { let posString = "LCPFMEBAJDKHOGIN"; }
+        if (num = 23) { let posString = "BNMDOIFEHCLJGKPA"; }
+        if (num = 24) { let posString = "CMOAHDKFGEBILJNP"; }
+        if (num = 25) { let posString = "MDIFJPEOHKCGBANL"; }
+        if (num = 26) { let posString = "KCGEOPAJMIDNLFBH"; }
+        if (num = 27) { let posString = "CNEOKBHJLDIMFPAG"; }
+        if (num = 28) { let posString = "CFPOJKNBDEMAHGIL"; }
+        if (num = 29) { let posString = "CMALKGNBEHIODFJP"; }
+        /**************** End of Generated Code ****************/
         // Fill position array with char int values
         let positions = Array.new(16);
         let i = 0;

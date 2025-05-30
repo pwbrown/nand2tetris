@@ -18,7 +18,7 @@ As part of my self-imposed commitment to try and learn something new every year,
 ## Course 2 - "Hack Assembly to Jack and OS (Tetris)"
 - [Project 7](./project7/README.md) - Build the initial VM translator to support basic memory segment stack operations and arithmetic operations
 - [Project 8](./project8/README.md) - Finish building the VM translator with support for functions, gotos, conditionals, and multi-file support
-- [Project 9](./project9/README.md) - Build an application in the Jack programming language
+- [Project 9](./project9/README.md) - Build an application in the Jack programming language (My project: The sliding puzzle game)
 
 ## N2T Command Line Utility
 
