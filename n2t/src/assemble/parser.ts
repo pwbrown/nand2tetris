@@ -82,12 +82,12 @@ export class Parser extends BaseParser {
         let jump: string | null = null;
         /** Gather any token until assignment, semi, or EOL as the destination */
         dest = '';
-        while (!this.curTokenIs(TokenType.Assign) && !this.curTokenIs(TokenType.Semi) && !this.curTokenIsEol()) {
+        while (!this.curTokenIs(TokenType.Equal) && !this.curTokenIs(TokenType.Semi) && !this.curTokenIsEol()) {
             dest += this.curToken.literal;
             this.nextToken();
         }
         /** Handle computation */
-        if (this.curTokenIs(TokenType.Assign)) {
+        if (this.curTokenIs(TokenType.Equal)) {
             this.nextToken();
             /** Gather until semi or Eol */
             while (!this.curTokenIs(TokenType.Semi) && !this.curTokenIsEol()) {

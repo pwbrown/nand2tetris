@@ -10,16 +10,14 @@ import { TokenType } from './token';
 describe('Shared - Lexer', () => {
     it('should track line numbers and column numbers', () => {
         const input = [
-            '',
-            '// My inline comment',
-            'push constant 4',
-            '',
-            '/*',
+            '\n// My inline comment',
+            '\rpush constant 4',
+            '\r\n/*',
             '   My multiline',
             '   comment goes here',
             '*/',
             'push constant 2',
-            'add',
+            '\tadd',
             '',
             '/**',
             ' * My cool documentation',
@@ -36,10 +34,11 @@ describe('Shared - Lexer', () => {
             [2, 1, 'My inline comment'],
             [2, 21, '\n'],
             // push constant 4 (line 3)
-            [3, 1, 'push'],
-            [3, 6, 'constant'],
-            [3, 15, '4'],
-            [3, 16, '\n'],
+            [3, 1, '\r'],
+            [3, 2, 'push'],
+            [3, 7, 'constant'],
+            [3, 16, '4'],
+            [3, 17, '\n'],
             // empty line (line 4)
             [4, 1, '\n'],
             /* (line 5-8)
@@ -54,8 +53,8 @@ describe('Shared - Lexer', () => {
             [9, 15, '2'],
             [9, 16, '\n'],
             // add (line 10)
-            [10, 1, 'add'],
-            [10, 4, '\n'],
+            [10, 5, 'add'],
+            [10, 8, '\n'],
             // empty line (line 11)
             [11, 1, '\n'],
             // comment (line 12-15)
@@ -120,7 +119,7 @@ describe('Shared - Lexer', () => {
             [TokenType.Newline, '\n'],
             // D=A
             [TokenType.Ident, 'D'],
-            [TokenType.Assign, '='],
+            [TokenType.Equal, '='],
             [TokenType.Ident, 'A'],
             [TokenType.Newline, '\n'],
             // @R10
@@ -129,7 +128,7 @@ describe('Shared - Lexer', () => {
             [TokenType.Newline, '\n'],
             // M=D
             [TokenType.Ident, 'M'],
-            [TokenType.Assign, '='],
+            [TokenType.Equal, '='],
             [TokenType.Ident, 'D'],
             [TokenType.Newline, '\n'],
             // Empty Line
@@ -148,7 +147,7 @@ describe('Shared - Lexer', () => {
             [TokenType.Newline, '\n'],
             // D=M
             [TokenType.Ident, 'D'],
-            [TokenType.Assign, '='],
+            [TokenType.Equal, '='],
             [TokenType.Ident, 'M'],
             [TokenType.Newline, '\n'],
             // @END
@@ -166,7 +165,7 @@ describe('Shared - Lexer', () => {
             [TokenType.Newline, '\n'],
             // M=M-1
             [TokenType.Ident, 'M'],
-            [TokenType.Assign, '='],
+            [TokenType.Equal, '='],
             [TokenType.Ident, 'M'],
             [TokenType.Minus, '-'],
             [TokenType.IntConst, '1'],
@@ -372,9 +371,9 @@ describe('Shared - Lexer', () => {
                 /*
                  * Create my class
                  */
-                constructor MyClass new(String initFoo, String initBar) {
+                constructor MyClass new(String initFoo) {
                     let foo = initFoo;
-                    let bar = initBar;
+                    let bar = "My String";
                     let fuz = Array.new(initFoo.length());
                     return this;
                 }
@@ -388,6 +387,11 @@ describe('Shared - Lexer', () => {
                 }
 
                 function int getFirstChar() {
+                    var int curLength;
+                    let curLength = 0 + 1 / 1 * 2;
+                    let fuz[0] = curLength;
+                    let fuz[1] = ~(0 | 1);
+                    let fuz[2] = (curLength > 0) & (curLength < 10);
                     return 0;
                 }
             }
@@ -420,37 +424,34 @@ describe('Shared - Lexer', () => {
             // Comment
             [TokenType.MultiComment, 'Create my class'],
             [TokenType.Newline, '\n'],
-            // constructor MyClass new(String initFoo, String initBar) {
+            // constructor MyClass new(String initFoo) {
             [TokenType.Constructor, 'constructor'],
             [TokenType.Ident, 'MyClass'],
             [TokenType.Ident, 'new'],
             [TokenType.LParen, '('],
             [TokenType.Ident, 'String'],
             [TokenType.Ident, 'initFoo'],
-            [TokenType.Comma, ','],
-            [TokenType.Ident, 'String'],
-            [TokenType.Ident, 'initBar'],
             [TokenType.RParen, ')'],
             [TokenType.LBrace, '{'],
             [TokenType.Newline, '\n'],
             // let foo = initFoo;
             [TokenType.Let, 'let'],
             [TokenType.Ident, 'foo'],
-            [TokenType.Assign, '='],
+            [TokenType.Equal, '='],
             [TokenType.Ident, 'initFoo'],
             [TokenType.Semi, ';'],
             [TokenType.Newline, '\n'],
             // let bar = initBar;
             [TokenType.Let, 'let'],
             [TokenType.Ident, 'bar'],
-            [TokenType.Assign, '='],
-            [TokenType.Ident, 'initBar'],
+            [TokenType.Equal, '='],
+            [TokenType.StringConst, 'My String'],
             [TokenType.Semi, ';'],
             [TokenType.Newline, '\n'],
             // let fuz = Array.new(initFoo.length());
             [TokenType.Let, 'let'],
             [TokenType.Ident, 'fuz'],
-            [TokenType.Assign, '='],
+            [TokenType.Equal, '='],
             [TokenType.Ident, 'Array'],
             [TokenType.Period, '.'],
             [TokenType.Ident, 'new'],
@@ -527,6 +528,70 @@ describe('Shared - Lexer', () => {
             [TokenType.LParen, '('],
             [TokenType.RParen, ')'],
             [TokenType.LBrace, '{'],
+            [TokenType.Newline, '\n'],
+            // var int curLength;
+            [TokenType.Var, 'var'],
+            [TokenType.Int, 'int'],
+            [TokenType.Ident, 'curLength'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // let curLength = 0 + 1 / 1 * 2;
+            [TokenType.Let, 'let'],
+            [TokenType.Ident, 'curLength'],
+            [TokenType.Equal, '='],
+            [TokenType.IntConst, '0'],
+            [TokenType.Plus, '+'],
+            [TokenType.IntConst, '1'],
+            [TokenType.Div, '/'],
+            [TokenType.IntConst, '1'],
+            [TokenType.Mult, '*'],
+            [TokenType.IntConst, '2'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // let fuz[0] = curLength;
+            [TokenType.Let, 'let'],
+            [TokenType.Ident, 'fuz'],
+            [TokenType.LBrack, '['],
+            [TokenType.IntConst, '0'],
+            [TokenType.RBrack, ']'],
+            [TokenType.Equal, '='],
+            [TokenType.Ident, 'curLength'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // let fuz[1] = ~(0 | 1);
+            [TokenType.Let, 'let'],
+            [TokenType.Ident, 'fuz'],
+            [TokenType.LBrack, '['],
+            [TokenType.IntConst, '1'],
+            [TokenType.RBrack, ']'],
+            [TokenType.Equal, '='],
+            [TokenType.Neg, '~'],
+            [TokenType.LParen, '('],
+            [TokenType.IntConst, '0'],
+            [TokenType.Or, '|'],
+            [TokenType.IntConst, '1'],
+            [TokenType.RParen, ')'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // let fuz[2] = (curLength > 0) & (curLength < 10);
+            [TokenType.Let, 'let'],
+            [TokenType.Ident, 'fuz'],
+            [TokenType.LBrack, '['],
+            [TokenType.IntConst, '2'],
+            [TokenType.RBrack, ']'],
+            [TokenType.Equal, '='],
+            [TokenType.LParen, '('],
+            [TokenType.Ident, 'curLength'],
+            [TokenType.Gt, '>'],
+            [TokenType.IntConst, '0'],
+            [TokenType.RParen, ')'],
+            [TokenType.And, '&'],
+            [TokenType.LParen, '('],
+            [TokenType.Ident, 'curLength'],
+            [TokenType.Lt, '<'],
+            [TokenType.IntConst, '10'],
+            [TokenType.RParen, ')'],
+            [TokenType.Semi, ';'],
             [TokenType.Newline, '\n'],
             // return 0;
             [TokenType.Return, 'return'],

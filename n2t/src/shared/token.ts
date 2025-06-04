@@ -50,8 +50,7 @@ export enum TokenType {
     RBrace = 'RBrace', // }
     Comma = 'Comma',   // ,
     Semi = 'Semi',     // ;
-    Assign = 'Assign', // =
-    Equal = 'Equal',   // ==
+    Equal = 'Equal',   // =
     Period = 'Period', // .
     Plus = 'Plus',     // +
     Minus = 'Minus',   // -
@@ -62,8 +61,6 @@ export enum TokenType {
     Neg = 'Neg',       // ~
     Lt = 'Lt',         // <
     Gt = 'Gt',         // >
-    Lte = 'Lte',       // <=
-    Gte = 'Gte',       // >=
     At = 'At',         // @
 
     // *********** CONSTANTS ************
