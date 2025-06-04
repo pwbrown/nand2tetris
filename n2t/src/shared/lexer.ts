@@ -107,12 +107,7 @@ export class Lexer {
             case ';':
                 return newToken(TokenType.Semi, ';');
             case '=':
-                if (this.peekChar() === '=') {
-                    this.readChar();
-                    return newToken(TokenType.Equal, '==');
-                } else {
-                    return newToken(TokenType.Assign, '=');
-                }
+                return newToken(TokenType.Equal, '=');
             case '.':
                 return newToken(TokenType.Period, '.');
             case '+':
@@ -128,19 +123,9 @@ export class Lexer {
             case '~':
                 return newToken(TokenType.Neg, '~');
             case '<':
-                if (this.peekChar() === '=') {
-                    this.readChar();
-                    return newToken(TokenType.Lte, '<=');
-                } else {
-                    return newToken(TokenType.Lt, '<');
-                }
+                return newToken(TokenType.Lt, '<');
             case '>':
-                if (this.peekChar() === '=') {
-                    this.readChar();
-                    return newToken(TokenType.Gte, '>=');
-                } else {
-                    return newToken(TokenType.Gt, '>');
-                }
+                return newToken(TokenType.Gt, '>');
             case '@':
                 return newToken(TokenType.At, '@');
             case '"':
