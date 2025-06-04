@@ -362,4 +362,192 @@ describe('Shared - Lexer', () => {
             expect(token.literal).toBe(literal);
         }
     });
-})
+
+    it('should generate tokens for the jack language', () => {
+        const input = `
+            class MyClass {
+                field String foo, bar;
+                field Array fuz;
+
+                /*
+                 * Create my class
+                 */
+                constructor MyClass new(String initFoo, String initBar) {
+                    let foo = initFoo;
+                    let bar = initBar;
+                    let fuz = Array.new(initFoo.length());
+                    return this;
+                }
+
+                // Dispose method
+                method void dispose() {
+                    do foo.dispose();
+                    do bar.dispose();
+                    do fuz.dispose();
+                    return;
+                }
+
+                function int getFirstChar() {
+                    return 0;
+                }
+            }
+        `;
+
+        const expectedTokens: [type: TokenType, literal: string][] = [
+            // empty line
+            [TokenType.Newline, '\n'],
+            // class MyClass {
+            [TokenType.Class, 'class'],
+            [TokenType.Ident, 'MyClass'],
+            [TokenType.LBrace, '{'],
+            [TokenType.Newline, '\n'],
+            // field String foo, bar;
+            [TokenType.Field, 'field'],
+            [TokenType.Ident, 'String'],
+            [TokenType.Ident, 'foo'],
+            [TokenType.Comma, ','],
+            [TokenType.Ident, 'bar'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // field Array fuz;
+            [TokenType.Field, 'field'],
+            [TokenType.Ident, 'Array'],
+            [TokenType.Ident, 'fuz'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // empty line
+            [TokenType.Newline, '\n'],
+            // Comment
+            [TokenType.MultiComment, 'Create my class'],
+            [TokenType.Newline, '\n'],
+            // constructor MyClass new(String initFoo, String initBar) {
+            [TokenType.Constructor, 'constructor'],
+            [TokenType.Ident, 'MyClass'],
+            [TokenType.Ident, 'new'],
+            [TokenType.LParen, '('],
+            [TokenType.Ident, 'String'],
+            [TokenType.Ident, 'initFoo'],
+            [TokenType.Comma, ','],
+            [TokenType.Ident, 'String'],
+            [TokenType.Ident, 'initBar'],
+            [TokenType.RParen, ')'],
+            [TokenType.LBrace, '{'],
+            [TokenType.Newline, '\n'],
+            // let foo = initFoo;
+            [TokenType.Let, 'let'],
+            [TokenType.Ident, 'foo'],
+            [TokenType.Assign, '='],
+            [TokenType.Ident, 'initFoo'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // let bar = initBar;
+            [TokenType.Let, 'let'],
+            [TokenType.Ident, 'bar'],
+            [TokenType.Assign, '='],
+            [TokenType.Ident, 'initBar'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // let fuz = Array.new(initFoo.length());
+            [TokenType.Let, 'let'],
+            [TokenType.Ident, 'fuz'],
+            [TokenType.Assign, '='],
+            [TokenType.Ident, 'Array'],
+            [TokenType.Period, '.'],
+            [TokenType.Ident, 'new'],
+            [TokenType.LParen, '('],
+            [TokenType.Ident, 'initFoo'],
+            [TokenType.Period, '.'],
+            [TokenType.Ident, 'length'],
+            [TokenType.LParen, '('],
+            [TokenType.RParen, ')'],
+            [TokenType.RParen, ')'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // return this;
+            [TokenType.Return, 'return'],
+            [TokenType.This, 'this'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // }
+            [TokenType.RBrace, '}'],
+            [TokenType.Newline, '\n'],
+            // Empty Line
+            [TokenType.Newline, '\n'],
+            // Comment
+            [TokenType.InlineComment, 'Dispose method'],
+            [TokenType.Newline, '\n'],
+            // method void dispose() {
+            [TokenType.Method, 'method'],
+            [TokenType.Void, 'void'],
+            [TokenType.Ident, 'dispose'],
+            [TokenType.LParen, '('],
+            [TokenType.RParen, ')'],
+            [TokenType.LBrace, '{'],
+            [TokenType.Newline, '\n'],
+            // do foo.dispose();
+            [TokenType.Do, 'do'],
+            [TokenType.Ident, 'foo'],
+            [TokenType.Period, '.'],
+            [TokenType.Ident, 'dispose'],
+            [TokenType.LParen, '('],
+            [TokenType.RParen, ')'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // do bar.dispose();
+            [TokenType.Do, 'do'],
+            [TokenType.Ident, 'bar'],
+            [TokenType.Period, '.'],
+            [TokenType.Ident, 'dispose'],
+            [TokenType.LParen, '('],
+            [TokenType.RParen, ')'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // do fuz.dispose();
+            [TokenType.Do, 'do'],
+            [TokenType.Ident, 'fuz'],
+            [TokenType.Period, '.'],
+            [TokenType.Ident, 'dispose'],
+            [TokenType.LParen, '('],
+            [TokenType.RParen, ')'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // return;
+            [TokenType.Return, 'return'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // }
+            [TokenType.RBrace, '}'],
+            [TokenType.Newline, '\n'],
+            // Empty line
+            [TokenType.Newline, '\n'],
+            // function int getFirstChar() {
+            [TokenType.Function, 'function'],
+            [TokenType.Int, 'int'],
+            [TokenType.Ident, 'getFirstChar'],
+            [TokenType.LParen, '('],
+            [TokenType.RParen, ')'],
+            [TokenType.LBrace, '{'],
+            [TokenType.Newline, '\n'],
+            // return 0;
+            [TokenType.Return, 'return'],
+            [TokenType.IntConst, '0'],
+            [TokenType.Semi, ';'],
+            [TokenType.Newline, '\n'],
+            // }
+            [TokenType.RBrace, '}'],
+            [TokenType.Newline, '\n'],
+            // }
+            [TokenType.RBrace, '}'],
+            [TokenType.Newline, '\n'],
+            // EOF
+            [TokenType.Eof, ''],
+        ];
+
+        const lexer = new Lexer(input);
+        for (const [type, literal] of expectedTokens) {
+            const token = lexer.nextToken();
+            expect(token.type).toBe(type);
+            expect(token.literal).toBe(literal);
+        }
+    });
+});
