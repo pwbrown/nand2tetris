@@ -615,4 +615,18 @@ describe('Shared - Lexer', () => {
             expect(token.literal).toBe(literal);
         }
     });
+
+    it('should classify unhandled characters as Unknown tokens', () => {
+        const input = `!#^:'?`;
+        const lexer = new Lexer(input);
+        let token = lexer.nextToken();
+        let tokenCount = 0;
+        while (token.type !== TokenType.Eof) {
+            expect(token.type).toBe(TokenType.Unknown);
+            tokenCount += 1;
+            token = lexer.nextToken();
+        }
+
+        expect(tokenCount).toBe(input.length);
+    });
 });
