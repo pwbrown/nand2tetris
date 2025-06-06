@@ -30,13 +30,13 @@ export class BaseParser {
     }
 
     /** Check if the current token is a specific type */
-    protected curTokenIs(type: TokenType) {
-        return this.curToken.type === type;
+    protected curTokenIs(...types: TokenType[]) {
+        return types.some((type) => this.curToken.type === type);
     }
 
     /** Checks if the next token is a specific type */
-    protected peekTokenIs(type: TokenType) {
-        return this.peekToken.type === type;
+    protected peekTokenIs(...types: TokenType[]) {
+        return types.some((type) => this.peekToken.type === type);
     }
 
     /** Checks if the current token is the end of the line */
@@ -52,21 +52,19 @@ export class BaseParser {
     /** Indicates if the next token represents the end of the line */
     protected isEol(type: TokenType) {
         return (
-            type === TokenType.InlineComment ||
-            type === TokenType.MultiComment ||
-            type === TokenType.DocComment ||
+            type === TokenType.Comment ||
             type === TokenType.Newline ||
             type === TokenType.Eof
         );
     }
 
     /** Goes to the next token if the peek token is a specific type */
-    protected expectPeek(type: TokenType) {
-        if (this.peekTokenIs(type)) {
+    protected expectPeek(...types: TokenType[]) {
+        if (this.peekTokenIs(...types)) {
             this.nextToken();
             return true;
         } else {
-            this.peekError(type);
+            this.peekError(...types);
             return false;
         }
     }
@@ -92,8 +90,11 @@ export class BaseParser {
     }
 
     /** Appends an error for a mismatched peek token type */
-    protected peekError(type: TokenType) {
-        return this.tokenError(this.peekToken, `expected next token to be ${type}, got ${this.peekToken.type} instead`);
+    protected peekError(...types: TokenType[]) {
+        const message = types.length === 1
+            ? types[0]
+            : `one of (${types.join(' | ')})`
+        return this.tokenError(this.peekToken, `expected next token to be ${message}, got ${this.peekToken.type} instead`);
     }
 
     /** Append an error to the errors list (with the token line and column number) */

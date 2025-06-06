@@ -25,7 +25,7 @@ export interface Obj {
 /******************** Lexical Elements ***********************/
 
 /** Keyword element */
-class KeywordObj implements Obj {
+export class KeywordObj implements Obj {
     constructor(public token: Token) {}
 
     toXMLNode(): XMLNode {
@@ -34,7 +34,7 @@ class KeywordObj implements Obj {
 }
 
 /** Symbol element */
-class SymbolObj implements Obj {
+export class SymbolObj implements Obj {
     constructor(public token: Token) {}
 
     toXMLNode(): XMLNode {
@@ -43,7 +43,7 @@ class SymbolObj implements Obj {
 }
 
 /** Integer Constant */
-class IntegerConstObj implements Obj {
+export class IntegerConstObj implements Obj {
     public value: number;
 
     constructor(public token: Token) {
@@ -56,7 +56,7 @@ class IntegerConstObj implements Obj {
 }
 
 /** String Constant */
-class StringConstObj implements Obj {
+export class StringConstObj implements Obj {
     constructor(public token: Token) {}
 
     toXMLNode(): XMLNode {
@@ -65,7 +65,7 @@ class StringConstObj implements Obj {
 }
 
 /** Identifier */
-class IdentifierObj implements Obj {
+export class IdentifierObj implements Obj {
     constructor(public token: Token) {}
 
     toXMLNode(): XMLNode {
@@ -101,7 +101,7 @@ export class ClassObj implements Obj {
             ...this.classVarDecs.map((dec) => dec.toXMLNode()),
             ...this.subroutineDecs.map((dec) => dec.toXMLNode()),
             this.rBraceSymbol.toXMLNode(),
-        ])
+        ]);
     };
 }
 
@@ -260,7 +260,7 @@ export type StatementObj =
     ReturnStatementObj;
 
 /** List of Statements */
-class StatementsObj implements Obj {
+export class StatementsObj implements Obj {
     public token: Token;
 
     constructor(public statements: StatementObj[]) {
@@ -315,7 +315,7 @@ export class LetStatementObj implements Obj {
 
 
 /** If/Else Statement */
-class IfStatementObj implements Obj {
+export class IfStatementObj implements Obj {
     public token: Token;
 
     constructor(
@@ -358,7 +358,7 @@ class IfStatementObj implements Obj {
 }
 
 /** While Statement */
-class WhileStatementObj implements Obj {
+export class WhileStatementObj implements Obj {
     public token: Token;
 
     constructor(

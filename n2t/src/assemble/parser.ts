@@ -5,12 +5,18 @@
  */
 
 import { BaseParser } from '../shared/base-parser';
+import { Lexer } from '../shared/lexer';
 import { TokenType } from '../shared/token';
 import { COMPUTATION, DEST_ORDER, JUMP } from './constants';
 import { Instruction } from './instruction';
 
 /** Assembly Parser */
 export class Parser extends BaseParser {
+    constructor(lexer: Lexer) {
+        lexer.skipComments();
+        super(lexer);
+    }
+
     /** Final list of instructions */
     private instructions: Instruction[] = [];
 
@@ -82,7 +88,7 @@ export class Parser extends BaseParser {
         let jump: string | null = null;
         /** Gather any token until assignment, semi, or EOL as the destination */
         dest = '';
-        while (!this.curTokenIs(TokenType.Equal) && !this.curTokenIs(TokenType.Semi) && !this.curTokenIsEol()) {
+        while (!this.curTokenIs(TokenType.Equal, TokenType.Semi) && !this.curTokenIsEol()) {
             dest += this.curToken.literal;
             this.nextToken();
         }

@@ -5,11 +5,17 @@
  */
 
 import { BaseParser } from "../shared/base-parser";
+import { Lexer } from "../shared/lexer";
 import { TokenType } from "../shared/token";
 import { Command } from "./command";
 import { ARITHMETIC_OPERATOR, MEMORY_SEGMENT, PUSH_POP_OPERATOR } from "./constants";
 
 export class Parser extends BaseParser {
+    constructor(lexer: Lexer) {
+        lexer.skipComments();
+        super(lexer);
+    }
+
     /** Final list of commands */
     private commands: Command[] = [];
     
@@ -212,11 +218,7 @@ export class Parser extends BaseParser {
         const token = this.curToken;
         /** Parse memory segment */
         if (
-            (
-                !this.peekTokenIs(TokenType.Ident) &&
-                !this.peekTokenIs(TokenType.Static) &&
-                !this.peekTokenIs(TokenType.This)
-            ) ||
+            !this.peekTokenIs(TokenType.Ident, TokenType.Static, TokenType.This) ||
             !MEMORY_SEGMENT[this.peekToken.literal]
         ) {
             this.tokenError(this.peekToken, `expected valid segment name but got '${this.peekToken.literal}'`);

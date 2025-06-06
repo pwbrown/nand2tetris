@@ -36,6 +36,9 @@ export const KEYWORDS: { [keyword: string]: TokenType } = {
 }
 
 export class Lexer {
+    private _skipComments = false;
+    private _skipNewlines = false;
+
     /** Source input tracking */
     private curLine = 1;  // Current line number within the input
     private curCol = 0;   // Current column number within the current line
@@ -51,6 +54,18 @@ export class Lexer {
         this.readChar();
     }
 
+    /** Set the functionality to skip comment tokens */
+    public skipComments() {
+        this._skipComments = true;
+        return this;
+    }
+    
+    /** Set the functionality to skip newline tokens */
+    public skipNewlines() {
+        this._skipNewlines = true;
+        return this;
+    }
+
     /** Returns the next token of the input string */
     public nextToken(): Token {
         this.skipSpacesAndTabs();
@@ -64,7 +79,14 @@ export class Lexer {
             if (read) {
                 this.readChar();
             }
-            return { line, col, type, literal };
+            /** Handle token skipping */
+            if (type === TokenType.Comment && this._skipComments) {
+                return this.nextToken();
+            } else if (type === TokenType.Newline && this._skipNewlines) {
+                return this.nextToken()
+            } else {
+                return { line, col, type, literal };
+            }
         };
 
         switch(this.char) {
@@ -215,13 +237,12 @@ export class Lexer {
             }
             const end = this.pos;
             const comment = this.input.substring(start, end).trim();
-            return [comment, TokenType.InlineComment];
+            return [comment, TokenType.Comment];
         }
         /** Handle multiline comments */
         else {
-            let type = TokenType.MultiComment;
+            const type = TokenType.Comment;
             if (peek === '*') {
-                type = TokenType.DocComment;
                 this.readChar();
             }
             const start = this.pos + 1;
