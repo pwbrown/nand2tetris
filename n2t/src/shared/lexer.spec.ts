@@ -78,6 +78,73 @@ describe('Shared - Lexer', () => {
             expect(token.literal).toBe(literal);
         }
     });
+
+    it('should ignore comments if enabled', () => {
+        const input = `
+            /** My comment */
+            var int something; // My new variable
+
+            /* Another comment */
+            class Blah {}
+        `;
+
+        const expected: string[] = [
+            '\n',
+            '\n',
+            'var',
+            'int',
+            'something',
+            ';',
+            '\n',
+            '\n',
+            '\n',
+            'class',
+            'Blah',
+            '{',
+            '}',
+            '\n',
+            ''
+        ];
+        const lexer = new Lexer(input);
+        lexer.skipComments();
+
+        for (const exp of expected) {
+            const token = lexer.nextToken();
+            expect(token.literal).toBe(exp);
+        }
+    });
+
+    it('should ignore newlines if enabled', () => {
+        const input = `
+            /** My comment */
+            var int something; // My new variable
+
+            /* Another comment */
+            class Blah {}
+        `;
+
+        const expected: string[] = [
+            'My comment',
+            'var',
+            'int',
+            'something',
+            ';',
+            'My new variable',
+            'Another comment',
+            'class',
+            'Blah',
+            '{',
+            '}',
+            ''
+        ];
+        const lexer = new Lexer(input);
+        lexer.skipNewlines();
+
+        for (const exp of expected) {
+            const token = lexer.nextToken();
+            expect(token.literal).toBe(exp);
+        }
+    });
     
     it('should generate tokens for hack assembly', () => {
         const input = `

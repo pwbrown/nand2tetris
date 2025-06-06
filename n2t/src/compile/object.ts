@@ -9,8 +9,7 @@ import { Token, TokenType } from "../shared/token";
 /** A single node of XML */
 export interface XMLNode {
     tag: string;
-    line: number;
-    col: number;
+    props: { [key: string]: string };
     children: string | XMLNode[];
 }
 
@@ -145,7 +144,7 @@ export class SubroutineDecObj implements Obj {
         public returnType: DataType,
         public nameIdentifier: IdentifierObj,
         public lParenSymbol: SymbolObj,
-        public parameterList: ParameterListObj | null,
+        public parameterList: ParameterListObj,
         public rParenSymbol: SymbolObj,
         public subroutineBody: SubroutineBodyObj,
     ) {
@@ -158,7 +157,7 @@ export class SubroutineDecObj implements Obj {
             this.returnType.toXMLNode(),
             this.nameIdentifier.toXMLNode(),
             this.lParenSymbol.toXMLNode(),
-            ...(this.parameterList ? [this.parameterList.toXMLNode()]: []),
+            this.parameterList.toXMLNode(),
             this.rParenSymbol.toXMLNode(),
             this.subroutineBody.toXMLNode(),
         ]);
@@ -173,10 +172,9 @@ export class ParameterListObj implements Obj {
         public parameters: [type: DataType, name: IdentifierObj][],
         public commaSymbols: SymbolObj[],
     ) {
-        if (!parameters.length) {
-            throw new Error('Fatal Error: Cannot instantiate parameter list with empty parameters');
-        }
-        this.token = this.parameters[0][0].token;
+        this.token = this.parameters.length
+            ? this.parameters[0][0].token
+            : unknownToken();
     }
     
     toXMLNode(): XMLNode {
@@ -325,11 +323,11 @@ export class IfStatementObj implements Obj {
         public rParenSymbol: SymbolObj,
         public consLBraceSymbol: SymbolObj,
         public consequenceStatements: StatementsObj,
-        public consRBraceSymbol: StatementsObj,
-        public elseKeyword?: KeywordObj,
-        public altLBraceSymbol?: SymbolObj,
-        public altStatements?: StatementsObj,
-        public altRBraceSymbol?: SymbolObj,
+        public consRBraceSymbol: SymbolObj,
+        public elseKeyword: KeywordObj | null,
+        public altLBraceSymbol: SymbolObj | null,
+        public altStatements: StatementsObj | null,
+        public altRBraceSymbol: SymbolObj | null,
     ) {
         this.token = ifKeyword.token;
     }
@@ -488,10 +486,9 @@ export class ExpressionListObj implements Obj {
         public expressions: ExpressionObj[],
         public commaSymbols: SymbolObj[],
     ) {
-        if (!expressions.length) {
-            throw new Error('Fatal Error: Cannot instantiate an empty expression list');
-        }
-        this.token = expressions[0].token;
+        this.token = expressions.length
+            ? expressions[0].token
+            : unknownToken();
     }
 
     toXMLNode(): XMLNode {
@@ -557,7 +554,7 @@ export class SubroutineCallObj implements Obj {
         public periodSymbol: SymbolObj | null,
         public subroutineNameIdentifier: IdentifierObj,
         public lParenSymbol: SymbolObj,
-        public expressionList: ExpressionListObj | null,
+        public expressionList: ExpressionListObj,
         public rParenSymbol: SymbolObj,
     ) {
         this.token = subroutineNameIdentifier.token;
@@ -575,7 +572,7 @@ export class SubroutineCallObj implements Obj {
             ),
             this.subroutineNameIdentifier.toXMLNode(),
             this.lParenSymbol.toXMLNode(),
-            ...(this.expressionList ? [this.expressionList.toXMLNode()] : []),
+            this.expressionList.toXMLNode(),
             this.rParenSymbol.toXMLNode(),
         ]);
     }
@@ -605,13 +602,22 @@ export class IndexExpressionObj implements Obj {
     }
 }
 
-
 /************************ Utility Functions ************************/
 
 /** Build an XML Node object using simple building blocks */
 const buildXMLNode = (tag: string, token: Token, children?: XMLNode[]): XMLNode => ({
     tag,
-    line: token.line,
-    col: token.col,
+    props: {
+        line: token.line.toString(),
+        col: token.col.toString(),
+    },
     children: children || token.literal,
+});
+
+/** Generates an unknown token for fallback usage */
+const unknownToken = (): Token => ({
+    type: TokenType.Unknown,
+    literal: '',
+    line: -1,
+    col: -1,
 });
