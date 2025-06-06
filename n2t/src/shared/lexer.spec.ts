@@ -111,7 +111,7 @@ describe('Shared - Lexer', () => {
             // Empty Line
             [TokenType.Newline, '\n'],
             // // set R10 to 4
-            [TokenType.InlineComment, 'set R10 to 4'],
+            [TokenType.Comment, 'set R10 to 4'],
             [TokenType.Newline, '\n'],
             // @4
             [TokenType.At, '@'],
@@ -134,7 +134,7 @@ describe('Shared - Lexer', () => {
             // Empty Line
             [TokenType.Newline, '\n'],
             // // main loop
-            [TokenType.MultiComment, 'main loop'],
+            [TokenType.Comment, 'main loop'],
             [TokenType.Newline, '\n'],
             // (LOOP)
             [TokenType.LParen, '('],
@@ -182,7 +182,7 @@ describe('Shared - Lexer', () => {
             // Empty Line
             [TokenType.Newline, '\n'],
             // Comment
-            [TokenType.DocComment, 'Another comment'],
+            [TokenType.Comment, 'Another comment'],
             [TokenType.Newline, '\n'],
             // (END)
             [TokenType.LParen, '('],
@@ -244,11 +244,11 @@ describe('Shared - Lexer', () => {
             [TokenType.Ident, 'push'],
             [TokenType.Ident, 'constant'],
             [TokenType.IntConst, '2'],
-            [TokenType.InlineComment, 'push 2'],
+            [TokenType.Comment, 'push 2'],
             [TokenType.Newline, '\n'],
             // neg             // negate 2
             [TokenType.Ident, 'neg'],
-            [TokenType.InlineComment, 'negate 2'],
+            [TokenType.Comment, 'negate 2'],
             [TokenType.Newline, '\n'],
             // call Math.abs 1  // positive 2
             [TokenType.Ident, 'call'],
@@ -256,7 +256,7 @@ describe('Shared - Lexer', () => {
             [TokenType.Period, '.'],
             [TokenType.Ident, 'abs'],
             [TokenType.IntConst, '1'],
-            [TokenType.InlineComment, 'positive 2'],
+            [TokenType.Comment, 'positive 2'],
             [TokenType.Newline, '\n'],
             // call Math.double 1   // double 2
             [TokenType.Ident, 'call'],
@@ -264,7 +264,7 @@ describe('Shared - Lexer', () => {
             [TokenType.Period, '.'],
             [TokenType.Ident, 'double'],
             [TokenType.IntConst, '1'],
-            [TokenType.InlineComment, 'double 2'],
+            [TokenType.Comment, 'double 2'],
             [TokenType.Newline, '\n'],
             // pop static 0
             [TokenType.Ident, 'pop'],
@@ -274,7 +274,7 @@ describe('Shared - Lexer', () => {
             // label STOP      // end loop
             [TokenType.Ident, 'label'],
             [TokenType.Ident, 'STOP'],
-            [TokenType.InlineComment, 'end loop'],
+            [TokenType.Comment, 'end loop'],
             [TokenType.Newline, '\n'],
             // goto STOP
             [TokenType.Ident, 'goto'],
@@ -422,7 +422,7 @@ describe('Shared - Lexer', () => {
             // empty line
             [TokenType.Newline, '\n'],
             // Comment
-            [TokenType.MultiComment, 'Create my class'],
+            [TokenType.Comment, 'Create my class'],
             [TokenType.Newline, '\n'],
             // constructor MyClass new(String initFoo) {
             [TokenType.Constructor, 'constructor'],
@@ -475,7 +475,7 @@ describe('Shared - Lexer', () => {
             // Empty Line
             [TokenType.Newline, '\n'],
             // Comment
-            [TokenType.InlineComment, 'Dispose method'],
+            [TokenType.Comment, 'Dispose method'],
             [TokenType.Newline, '\n'],
             // method void dispose() {
             [TokenType.Method, 'method'],

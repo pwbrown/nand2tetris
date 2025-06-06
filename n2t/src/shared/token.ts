@@ -14,9 +14,7 @@ export enum TokenType {
     
     // ************ WHITESPACE/COMMENTS *************
     Newline = 'Newline',             // \n
-    InlineComment = 'InlineComment', // "//..."
-    MultiComment = 'MultiComment',   // "/* ... */"
-    DocComment = 'DocComment',       // "/** ... */"
+    Comment = 'Comment', // "//..." OR /** */ OR /* */
     
     // ************* KEYWORDS ****************
     Class = 'Class',
