@@ -1,5 +1,5 @@
 /**
- * Compile Parse Tree Objects
+ * Compile Parser Objects (Parse Tree Definition)
  * Author      : Philip Brown
  * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/compile/object.ts
  */
@@ -303,7 +303,6 @@ export class LetStatementObj implements Obj {
                     ? [this.variable.toXMLNode()]
                     : this.variable.toXMLNode().children as XMLNode[]
             ),
-            this.variable.toXMLNode(),
             this.equalSymbol.toXMLNode(),
             this.expression.toXMLNode(),
             this.semiSymbol.toXMLNode(),

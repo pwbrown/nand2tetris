@@ -83,7 +83,7 @@ export class Lexer {
             if (type === TokenType.Comment && this._skipComments) {
                 return this.nextToken();
             } else if (type === TokenType.Newline && this._skipNewlines) {
-                return this.nextToken()
+                return this.nextToken();
             } else {
                 return { line, col, type, literal };
             }

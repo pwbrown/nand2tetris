@@ -16,7 +16,7 @@ export interface Options {
 }
 
 /** Regular expression to match command line option (format: '--OPT_NAME' or '-abc') */
-const OPT_REGEX = /^--?[a-z]+$/i;
+const OPT_REGEX = /^--?[a-z][a-z-]+$/i;
 
 /** Parse the process arguments and return arguments and options map */
 export const parseOptions = (processArgs: string[]): [args: Args, options: Options] => {

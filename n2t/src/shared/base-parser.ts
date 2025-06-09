@@ -12,10 +12,13 @@ export class BaseParser {
     protected curToken: Token;
     protected peekToken: Token;
     protected errors: string[] = [];
+    protected allTokens: Token[] = [];
 
     constructor(protected lexer: Lexer) {
         this.curToken = lexer.nextToken();
         this.peekToken = lexer.nextToken();
+        this.allTokens.push(this.curToken);
+        this.allTokens.push(this.peekToken);
     }
 
     /** Returns all parser errors */
@@ -27,6 +30,7 @@ export class BaseParser {
     protected nextToken() {
         this.curToken = this.peekToken;
         this.peekToken = this.lexer.nextToken();
+        this.allTokens.push(this.peekToken);
     }
 
     /** Check if the current token is a specific type */

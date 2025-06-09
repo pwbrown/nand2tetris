@@ -1,5 +1,11 @@
+/**
+ * Compile Parser Tests
+ * Author      : Philip Brown
+ * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/compile/parser.spec.ts
+ */
+
 import { Parser } from './parser';
-import { Lexer } from './lexer';
+import { Lexer } from '../shared/lexer';
 import {
     ClassObj,
     ClassVarDecObj,

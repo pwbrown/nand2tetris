@@ -4,9 +4,10 @@
  * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/n2t.ts
  */
 
-import { assemble } from "./assemble/assemble";
-import { translate } from "./translate/translate";
-import { getFileReferences, parseOptions } from "./utils";
+import { assemble } from './assemble/assemble';
+import { translate } from './translate/translate';
+import { compile } from './compile/compile';
+import { getFileReferences, parseOptions } from './utils';
 
 const main = async (processArgs: string[]) => {
     /** Parse options into logical components */
@@ -22,7 +23,8 @@ const main = async (processArgs: string[]) => {
     /** Switch between extensions */
     switch(references.ext as string) {
         case '.jack':
-            throw new Error('Not Implemented yet');
+            await compile(references, options);
+            break;
         case '.vm':
             await translate(references, options);
             break;

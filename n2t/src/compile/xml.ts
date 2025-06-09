@@ -1,4 +1,10 @@
-import { XMLNode } from "./object";
+/**
+ * Compile XML Utilities
+ * Author      : Philip Brown
+ * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/compile/xml.ts
+ */
+
+import { XMLNode } from './object';
 
 interface ToXMLOptions {
     spaces?: number;
