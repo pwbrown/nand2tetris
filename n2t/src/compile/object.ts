@@ -9,7 +9,7 @@ import { Token, TokenType } from "../shared/token";
 /** A single node of XML */
 export interface XMLNode {
     tag: string;
-    props: { [key: string]: string };
+    props?: { [key: string]: string };
     children: string | XMLNode[];
 }
 
