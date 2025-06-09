@@ -1,5 +1,5 @@
 import { Parser } from './parser';
-import { Lexer } from '../shared/lexer';
+import { Lexer } from './lexer';
 import {
     ClassObj,
     ClassVarDecObj,

@@ -5,7 +5,7 @@
  */
 
 import { BaseParser } from '../shared/base-parser';
-import { Lexer } from '../shared/lexer';
+import { Lexer } from './lexer';
 import { TokenType } from '../shared/token';
 import {
     ClassObj,
@@ -38,13 +38,6 @@ import {
 } from './object';
 
 export class Parser extends BaseParser {
-    constructor(lexer: Lexer) {
-        lexer
-            .skipComments()
-            .skipNewlines();
-        super(lexer);
-    }
-
     /** Parse the program class */
     public parseClass(): ClassObj | null {
         /** Class Keyword */
