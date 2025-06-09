@@ -635,7 +635,7 @@ export class Parser extends BaseParser {
         if (this.peekTokenIs(TokenType.LBrack)) {
             /** Left Bracket */
             this.nextToken();
-            const lBrack = new KeywordObj(this.curToken);
+            const lBrack = new SymbolObj(this.curToken);
             /** index expression */
             const expression = this.parseExpression();
             if (!expression) {
@@ -645,7 +645,7 @@ export class Parser extends BaseParser {
             if (!this.expectPeek(TokenType.RBrack)) {
                 return null;
             }
-            const rBrack = new KeywordObj(this.curToken);
+            const rBrack = new SymbolObj(this.curToken);
             return new IndexExpressionObj(
                 varName,
                 lBrack,
