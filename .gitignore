@@ -140,6 +140,7 @@ project6/**/*.hack
 project7/**/*.asm
 project8/**/*.asm
 project9/**/*.vm
+project9/**/*.xml
 *.zip
 *.DS_STORE
 *.txt

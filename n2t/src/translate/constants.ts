@@ -3,6 +3,7 @@
  * Author      : Philip Brown
  * Source Code : https://github.com/pwbrown/nand2tetris/n2t/src/translate/constants.ts
  */
+
 /** Available arithmetic operators */
 export const ARITHMETIC_OPERATOR: { [op: string]: string } = {
   add: 'add',
