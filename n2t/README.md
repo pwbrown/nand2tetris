@@ -49,6 +49,24 @@ npm run n2t -- ./MyCode.vm
 
 _**Recursively assemble all .vm files within a directory into a SINGLE .asm file**_
 ```sh
-npm run n2t -- ./my-directory/**/.vm
+npm run n2t -- ./my-directory/**/*.vm
 # generates a single ./my-directory/my-directory.asm file as the output
+```
+
+### Jack Code to VM Code (Compilation)
+
+_**Perform lexical analysis and parsing on a single Jack file to generate the token and parse tree XML files**_
+```sh
+npm run n2t -- ./MyCode.jack
+# generates:
+#   - ./MyCodeT.xml
+#   - ./MyCode.xml
+```
+
+_**Perform lexical analysis and parsing on a directory of nested Jack files to generate the token and parse tree XML files**_
+```sh
+npm run n2t -- ./MyCode/**/*.jack
+# generates:
+#   - ./MyCode/**/*T.xml
+#   - ./MyCode/**/*.xml
 ```
