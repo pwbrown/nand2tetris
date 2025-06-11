@@ -13,6 +13,14 @@ interface ToXMLOptions {
 
 const DEFAULT_SPACES = 4;
 
+/** Map of special characters to their corresponding XML entities */
+const SPECIAL_CHARS: { [char: string]: string} = {
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    '&': '&amp;',
+}
+
 /** Converts a single XMLNode into an XML String */
 export const toXMLString = (node: XMLNode, options: ToXMLOptions, level = 0): string => {
     const spaces = typeof options.spaces === 'number' ? options.spaces : DEFAULT_SPACES;
@@ -27,7 +35,10 @@ export const toXMLString = (node: XMLNode, options: ToXMLOptions, level = 0): st
     const close = `</${node.tag}>`;
     /** Single Child */
     if (typeof node.children === 'string') {
-        return `${pad}${open} ${node.children.trim()} ${close}\n`;
+        const text = node.children === 'constructor'
+            ? node.children // Handle special case since constructor is technically a property of everything in javascript (lol)
+            : SPECIAL_CHARS[node.children] || node.children;
+        return `${pad}${open} ${text} ${close}\n`;
     }
     /** Multiple Children */
     else {

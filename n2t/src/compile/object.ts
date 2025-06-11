@@ -126,7 +126,7 @@ export class ClassVarDecObj implements Obj {
             }
             varList.push(varName.toXMLNode());
         });
-        return buildXMLNode('varDec', this.token, [
+        return buildXMLNode('classVarDec', this.token, [
             this.classVarKeyword.toXMLNode(),
             this.varType.toXMLNode(),
             ...varList,
@@ -398,7 +398,7 @@ export class DoStatementObj implements Obj {
     toXMLNode(): XMLNode {
         return buildXMLNode('doStatement', this.token, [
             this.doKeyword.toXMLNode(),
-            this.subroutineCall.toXMLNode(),
+            ...this.subroutineCall.toXMLNode().children as XMLNode[],
             this.semiSymbol.toXMLNode(),
         ]);
     }
@@ -447,7 +447,13 @@ export class TermObj implements Obj {
     }
 
     toXMLNode(): XMLNode {
-        return buildXMLNode('term', this.token, [this.term.toXMLNode()]);
+        const termNode = this.term.toXMLNode();
+        const isIndexExpression = this.term instanceof IndexExpressionObj;
+        const isSubroutineCall = this.term instanceof SubroutineCallObj;
+        const isExpressionGroup = this.term instanceof ExpressionGroupObj;
+        const isUnaryOp = this.term instanceof UnaryOpTermObj;
+        const onlyChildren = isIndexExpression || isSubroutineCall || isExpressionGroup || isUnaryOp;
+        return buildXMLNode('term', this.token, onlyChildren ? termNode.children as XMLNode[] : [termNode]);
     };
 }
 
