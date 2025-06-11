@@ -19,7 +19,8 @@ As part of my self-imposed commitment to try and learn something new every year,
 - [Project 7](./project7/README.md) - Build the initial VM translator to support basic memory segment stack operations and arithmetic operations
 - [Project 8](./project8/README.md) - Finish building the VM translator with support for functions, gotos, conditionals, and multi-file support
 - [Project 9](./project9/README.md) - Build an application in the Jack programming language (My project: The sliding puzzle game)
+- [Project 10](./project10/README.md) - Build the lexical analyzer and parser for the Jack programming language compiler
 
 ## N2T Command Line Utility
 
-While I was completing the course I started implementing the assembler and the translator as their own distinct programming projects. When I started module 9 which introduced the Jack programming language, I took a brief break from the course lessons and decided to rewrite the assembler and translator into a much more streamlined tool. This tool would make room for the enventual Jack compiler and would serve a single command that could take Jack code all the way down to Hack binary (if desired). [Read more...](./n2t/README.md)
+While I was completing the course I started implementing the assembler and the translator as their own distinct programming projects. When I started module 9 which introduced the Jack programming language, I took a brief break from the course lessons and decided to rewrite the assembler and translator into a much more streamlined tool. This tool makes room for the Jack compiler and serves as a single command that can take Jack code all the way down to Hack binary (if desired). [Read more...](./n2t/README.md)

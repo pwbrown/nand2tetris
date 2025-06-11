@@ -141,6 +141,7 @@ project7/**/*.asm
 project8/**/*.asm
 project9/**/*.vm
 project9/**/*.xml
+n2t/bundle/
 *.zip
 *.DS_STORE
 *.txt
