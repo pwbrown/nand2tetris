@@ -53,7 +53,7 @@ export class Writer extends BaseWriter {
     private subroutineName: string | null = null;
     private classSymbols: { [sym: string]: Sym } = {};
     private routineSymbols: { [sym: string]: Sym } = {};
-    private labelIndexes: { [label: string]: number } = {};
+    private labelIndex = 0;
 
     constructor(
         private root: ClassObj,
@@ -68,7 +68,7 @@ export class Writer extends BaseWriter {
         /** Compile the program and write to the output file */
         const allLines = this.compileClass(this.root);
         for (const line of allLines) {
-            const indent = line && !line.startsWith('function');
+            const indent = line && !line.startsWith('function') && !line.startsWith('label');
             this.writeLine(`${indent ? '    ' : ''}${line}`);
         }
 
@@ -232,7 +232,7 @@ export class Writer extends BaseWriter {
             ...this.compileExpression(obj.conditionExpression),
             'not',
         );
-        const endLabel = this.indexLabel('END_IF');
+        const endLabel = this.createLabel();
         const consequence = this.compileStatements(obj.consequenceStatements);
         if (!obj.altStatements) {
             /** Handle if only */
@@ -242,7 +242,7 @@ export class Writer extends BaseWriter {
             );
         } else {
             /** Handle if-else */
-            const elseLabel = this.indexLabel('ELSE_IF');
+            const elseLabel = this.createLabel();
             lines.push(
                 `if-goto ${elseLabel}`,
                 ...consequence,
@@ -258,8 +258,8 @@ export class Writer extends BaseWriter {
 
     /** Compile a while loop */
     private compileWhile(obj: WhileStatementObj): string[] {
-        const label = this.indexLabel('WHILE');
-        const endLabel = this.indexLabel('END_WHILE');
+        const label = this.createLabel();
+        const endLabel = this.createLabel();
         return [
             `label ${label}`,
             ...this.compileExpression(obj.expression),
@@ -515,8 +515,8 @@ export class Writer extends BaseWriter {
     /******************** LABELING *****************/
 
     /** Indexes a label and auto-increments */
-    private indexLabel(label: string) {
-        this.labelIndexes[label] = (this.labelIndexes[label] || 0) + 1;
-        return `${label}_${this.labelIndexes[label]}`;
+    private createLabel() {
+        this.labelIndex++;
+        return `${this.className}_${this.labelIndex}`;
     }
 }
