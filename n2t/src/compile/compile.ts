@@ -10,11 +10,13 @@ import { Lexer } from '../shared/lexer';
 import { Parser } from './parser';
 import { FileReferences, Options } from '../utils';
 import { toXMLString } from './xml';
+import { Writer } from './writer';
 
 /** Individually read and parse all Jack files and generate a VM file and token and object XML files for each Jack file */
 export const compile = async (references: FileReferences, options: Options) => {
     /** Handle options */
     const includeProps = !!options['source-map'];
+    const includeXml = !!options['xml'];
 
     /** Read and compile each Jack file */
     for (const ref of references.inputFiles) {
@@ -35,19 +37,26 @@ export const compile = async (references: FileReferences, options: Options) => {
         }
 
         if (programClass) {
-            /** Build and write XML for all tokens */
-            const tokenXMLOut = join(ref.dir, `${ref.name}T.xml`);
-            const tokenXMLString = toXMLString(parser.tokensToXMLNode(), { includeProps });
-            await writeFile(tokenXMLOut, tokenXMLString, { encoding: 'utf-8' });
-            /** Build and write XML for the parse tree */
-            const programXMLOut = join(ref.dir, `${ref.name}.xml`);
-            const programXMLString = toXMLString(programClass.toXMLNode(), { includeProps });
-            await writeFile(programXMLOut, programXMLString, { encoding: 'utf-8' });
+            /** Create the writer and write all of the VM code */
+            const outputFile = join(ref.dir, `${ref.name}.vm`);
+            const writer = new Writer(programClass, outputFile);
+            await writer.writeVM();
             console.error('Finished parsing jack file:');
             console.error(`  -- Input   : ${ref.path}`);
-            console.error(`  -- Outputs :`);
-            console.error(`               - ${tokenXMLOut}`);
-            console.error(`               - ${programXMLOut}`);;
+            console.error(`  -- Outputs : ${outputFile}`);
+            /** Optionally build original XML syntax analyzer output */
+            if (includeXml) {
+                /** Build and write XML for all tokens */
+                const tokenXMLOut = join(ref.dir, `${ref.name}T.xml`);
+                const tokenXMLString = toXMLString(parser.tokensToXMLNode(), { includeProps });
+                await writeFile(tokenXMLOut, tokenXMLString, { encoding: 'utf-8' });
+                /** Build and write XML for the parse tree */
+                const programXMLOut = join(ref.dir, `${ref.name}.xml`);
+                const programXMLString = toXMLString(programClass.toXMLNode(), { includeProps });
+                await writeFile(programXMLOut, programXMLString, { encoding: 'utf-8' });
+                console.error(`               - ${tokenXMLOut}`);
+                console.error(`               - ${programXMLOut}`);;
+            }
         }
     }
 }

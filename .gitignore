@@ -143,6 +143,10 @@ project9/**/*.vm
 project9/**/*.xml
 project10/files/**/*.xml
 !project10/files/**/compare/*.xml
+project11/files/**/*.vm
+project11/files/**/*.asm
+project11/files/**/*.hack
+project11/files/**/*.xml
 n2t/bundle/
 *.zip
 *.DS_STORE
