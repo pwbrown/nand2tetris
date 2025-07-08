@@ -20,6 +20,7 @@ As part of my self-imposed commitment to try and learn something new every year,
 - [Project 8](./project8/README.md) - Finish building the VM translator with support for functions, gotos, conditionals, and multi-file support
 - [Project 9](./project9/README.md) - Build an application in the Jack programming language (My project: The sliding puzzle game)
 - [Project 10](./project10/README.md) - Build the lexical analyzer and parser for the Jack programming language compiler
+- [Project 11](./project11/README.md) - Build the finished Jack compiler
 
 ## N2T Command Line Utility
 
