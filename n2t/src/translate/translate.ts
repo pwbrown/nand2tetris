@@ -12,7 +12,7 @@ import { FileReferences, Options } from '../utils';
 import { Lexer } from '../shared/lexer';
 
 /** Individually read and parse all VM files and generate a single combined assembly file */
-export const translate = async (references: FileReferences, options: Options) => {
+export const translate = async (references: FileReferences, options?: Options) => {
     /** Keep track of all parsed inputs */
     const inputs: WriterInput[] = [];
     

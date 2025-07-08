@@ -66,7 +66,10 @@ export interface FileReferences {
 const EXT_PRIORITY = ['.jack', '.vm', '.asm'];
 
 /** Parses the input argument and returns one or more file references */
-export const getFileReferences = async (inputArg: string): Promise<FileReferences> => {
+export const getFileReferences = async (
+  inputArg: string,
+  requestedExtension?: string,
+): Promise<FileReferences> => {
   const inputPath = resolve(inputArg);
   const inputStat = await stat(inputPath);
   let lowestExtInd = Infinity;
@@ -100,7 +103,7 @@ export const getFileReferences = async (inputArg: string): Promise<FileReference
         allFiles.push(...references.inputFiles);
     }
 
-    const ext = EXT_PRIORITY[lowestExtInd] || null;
+    const ext = requestedExtension || EXT_PRIORITY[lowestExtInd] || null;
 
     /** Get files filtered by extension */
     return {
@@ -115,7 +118,7 @@ export const getFileReferences = async (inputArg: string): Promise<FileReference
     const ext: string | null = extname(inputPath);
     const name = basename(inputPath, ext);
     const extInd = EXT_PRIORITY.indexOf(ext);
-    if (extInd === -1) {
+    if (extInd === -1 || (requestedExtension && ext !== requestedExtension)) {
         return {
             dir: null,
             ext: null,

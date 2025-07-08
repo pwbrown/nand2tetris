@@ -13,10 +13,11 @@ import { toXMLString } from './xml';
 import { Writer } from './writer';
 
 /** Individually read and parse all Jack files and generate a VM file and token and object XML files for each Jack file */
-export const compile = async (references: FileReferences, options: Options) => {
+export const compile = async (references: FileReferences, options?: Options) => {
     /** Handle options */
-    const includeProps = !!options['source-map'];
-    const includeXml = !!options['xml'];
+    const includeProps = !!options?.['source-map'];
+    const includeXml = !!options?.['xml'];
+    const annotate = !!options?.['annotate'];
 
     /** Read and compile each Jack file */
     for (const ref of references.inputFiles) {
@@ -39,7 +40,7 @@ export const compile = async (references: FileReferences, options: Options) => {
         if (programClass) {
             /** Create the writer and write all of the VM code */
             const outputFile = join(ref.dir, `${ref.name}.vm`);
-            const writer = new Writer(programClass, outputFile);
+            const writer = new Writer(programClass, outputFile, annotate);
             await writer.writeVM();
             console.error('Finished parsing jack file:');
             console.error(`  -- Input   : ${ref.path}`);

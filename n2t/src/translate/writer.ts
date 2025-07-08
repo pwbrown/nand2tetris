@@ -36,7 +36,7 @@ export interface WriterOptions {
     /** Output file to generate */
     outputFile: string;
     /** Command line options */
-    cliOpts: Options;
+    cliOpts?: Options;
     /** Indicates if the bootstrap code should be injected first */
     bootstrap: boolean;
 }
@@ -53,7 +53,7 @@ export class Writer extends BaseWriter {
     constructor(options: WriterOptions) {
         super(options.outputFile);
         this.inputs = options.inputs;
-        this.annotate = !!options.cliOpts.annotate;
+        this.annotate = !!options.cliOpts?.annotate;
         this.bootstrap = options.bootstrap;
     }
 

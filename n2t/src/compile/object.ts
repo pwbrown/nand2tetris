@@ -19,6 +19,8 @@ export interface Obj {
     token: Token;
     /** Generates the XML representation of the object as a list of lines */
     toXMLNode: () => XMLNode;
+    /** Generates a string representation of the object (for annotation) */
+    toString: () => string;
 }
 
 /******************** Lexical Elements ***********************/
@@ -30,6 +32,10 @@ export class KeywordObj implements Obj {
     toXMLNode(): XMLNode {
         return buildXMLNode('keyword', this.token);
     }
+
+    toString() {
+        return this.token.literal;
+    }
 }
 
 /** Symbol element */
@@ -38,6 +44,10 @@ export class SymbolObj implements Obj {
 
     toXMLNode(): XMLNode {
         return buildXMLNode('symbol', this.token);
+    }
+
+    toString() {
+        return this.token.literal;
     }
 }
 
@@ -52,6 +62,10 @@ export class IntegerConstObj implements Obj {
     toXMLNode(): XMLNode {
         return buildXMLNode('integerConstant', this.token);
     }
+
+    toString() {
+        return this.token.literal;
+    }
 }
 
 /** String Constant */
@@ -61,6 +75,10 @@ export class StringConstObj implements Obj {
     toXMLNode(): XMLNode {
         return buildXMLNode('stringConstant', this.token);
     }
+
+    toString() {
+        return `"${this.token.literal}"`;
+    }
 }
 
 /** Identifier */
@@ -69,6 +87,10 @@ export class IdentifierObj implements Obj {
 
     toXMLNode(): XMLNode {
         return buildXMLNode('identifier', this.token);
+    }
+
+    toString() {
+        return this.token.literal;
     }
 }
 
@@ -102,6 +124,10 @@ export class ClassObj implements Obj {
             this.rBraceSymbol.toXMLNode(),
         ]);
     };
+
+    toString() {
+        return `class ${this.classNameIdentifier.toString()}`;
+    }
 }
 
 /** Class variable declaration */
@@ -133,6 +159,10 @@ export class ClassVarDecObj implements Obj {
             this.semiSymbol.toXMLNode(),
         ]);
     }
+
+    toString() {
+        return 'N/A';
+    }
 }
 
 /** Subroutine declaration */
@@ -162,6 +192,12 @@ export class SubroutineDecObj implements Obj {
             this.subroutineBody.toXMLNode(),
         ]);
     }
+
+    toString() {
+        return `${this.routineType.toString()} ${this.returnType.toString()} ${this.nameIdentifier.toString()}(${
+            this.parameterList.toString()
+        })`;
+    }
 }
 
 /** Parameter list */
@@ -190,6 +226,10 @@ export class ParameterListObj implements Obj {
         });
         return buildXMLNode('parameterList', this.token, children);
     };
+
+    toString() {
+        return this.parameters.map(([type, name]) => `${type.toString()} ${name.toString()}`).join(', ');
+    }
 }
 
 /** Subroutine body */
@@ -212,6 +252,10 @@ export class SubroutineBodyObj implements Obj {
             this.statements.toXMLNode(),
             this.rBraceSymbol.toXMLNode(),
         ]);
+    }
+
+    toString() {
+        return 'N/A';
     }
 }
 
@@ -243,6 +287,10 @@ export class VarDecObj implements Obj {
             ...varList,
             this.semiSymbol.toXMLNode(),
         ]);
+    }
+
+    toString() {
+        return 'N/A';
     }
 }
 
@@ -278,6 +326,10 @@ export class StatementsObj implements Obj {
             this.statements.map((stmt) => stmt.toXMLNode()),
         );
     }
+
+    toString() {
+        return 'N/A';
+    }
 }
 
 /** Let Statement */
@@ -307,6 +359,10 @@ export class LetStatementObj implements Obj {
             this.expression.toXMLNode(),
             this.semiSymbol.toXMLNode(),
         ]);
+    }
+
+    toString() {
+        return `let ${this.variable.toString()} = ${this.expression.toString()};`;
     }
 }
 
@@ -352,6 +408,14 @@ export class IfStatementObj implements Obj {
             )
         ]);
     }
+
+    toString() {
+        return `if (${this.conditionExpression.toString()}) { ... }${
+            !!this.altStatements
+                ? ` else { ... }`
+                : ''
+        }`;
+    }
 }
 
 /** While Statement */
@@ -381,6 +445,10 @@ export class WhileStatementObj implements Obj {
             this.rBraceSymbol.toXMLNode(),
         ]);
     }
+
+    toString() {
+        return `while (${this.expression.toString()}) { ... }`;
+    }
 }
 
 /** Do Statement */
@@ -401,6 +469,10 @@ export class DoStatementObj implements Obj {
             ...this.subroutineCall.toXMLNode().children as XMLNode[],
             this.semiSymbol.toXMLNode(),
         ]);
+    }
+
+    toString() {
+        return `do ${this.subroutineCall.toString()};`;
     }
 }
 
@@ -423,6 +495,10 @@ export class ReturnStatementObj implements Obj {
             this.semiSymbol.toXMLNode(),
         ]);
     };
+
+    toString() {
+        return `return${!!this.expression ? ` ${this.expression.toString()}` : ''};`;
+    }
 }
 
 /************************* Expressions ******************************/
@@ -455,6 +531,10 @@ export class TermObj implements Obj {
         const onlyChildren = isIndexExpression || isSubroutineCall || isExpressionGroup || isUnaryOp;
         return buildXMLNode('term', this.token, onlyChildren ? termNode.children as XMLNode[] : [termNode]);
     };
+
+    toString () {
+        return this.term.toString();
+    }
 }
 
 /** Single Expression */
@@ -481,6 +561,12 @@ export class ExpressionObj implements Obj {
         });
         return buildXMLNode('expression', this.token, children);
     };
+
+    toString() {
+        return this.terms
+            .map((term, i) => `${i !== 0 ? `${this.operators[i - 1].toString()} ` : ''}${term.toString()}`)
+            .join(' ');
+    }
 }
 
 /** List of Expressions */
@@ -506,6 +592,10 @@ export class ExpressionListObj implements Obj {
         });
         return buildXMLNode('expressionList', this.token, children);
     }
+
+    toString() {
+        return this.expressions.map((exp) => exp.toString()).join(', ');
+    }
 }
 
 /** An expression wrapped in parenthesis */
@@ -528,6 +618,10 @@ export class ExpressionGroupObj implements Obj {
             this.rParenSymbol.toXMLNode(),
         ]);
     }
+
+    toString(): string {
+        return `(${this.expression.toString()})`;
+    }
 }
 
 /** Unary operator followed by a term */
@@ -548,6 +642,10 @@ export class UnaryOpTermObj implements Obj {
             this.term.toXMLNode(),
         ]);
     };
+
+    toString(): string {
+        return `${this.operator.toString()}${this.term.toString()}`;
+    }
 }
 
 /** Call Expression for a subroutine */
@@ -581,6 +679,16 @@ export class SubroutineCallObj implements Obj {
             this.rParenSymbol.toXMLNode(),
         ]);
     }
+
+    toString(): string {
+        return `${
+            !!this.objNameIdentifier
+                ? `${this.objNameIdentifier.toString()}.`
+                : ''
+        }${this.subroutineNameIdentifier.toString()}(${
+            this.expressionList.toString()
+        })`;
+    }
 }
 
 /** A variable index expression */
@@ -604,6 +712,10 @@ export class IndexExpressionObj implements Obj {
             this.indexExpression.toXMLNode(),
             this.rBrackSymbol.toXMLNode(),
         ]);
+    }
+
+    toString(): string {
+        return `${this.varIdentifier.toString()}[${this.indexExpression.toString()}]`;
     }
 }
 

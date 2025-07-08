@@ -7,31 +7,45 @@
 import { assemble } from './assemble/assemble';
 import { translate } from './translate/translate';
 import { compile } from './compile/compile';
-import { getFileReferences, parseOptions } from './utils';
+import { getFileReferences, parseOptions, FileReferences, Options } from './utils';
+
+/** Map of commands to the appropriate file extension */
+const COMMANDS: { [command: string]: string } = {
+    'compile': '.jack',
+    'translate': '.vm',
+    'assemble': '.asm',
+};
+
+const EXTENSIONS: { [ext: string]: (refs: FileReferences, options?: Options) => Promise<void> } = {
+    '.jack': compile,
+    '.vm': translate,
+    '.asm': assemble,
+}
 
 const main = async (processArgs: string[]) => {
     /** Parse options into logical components */
     const [args, options] = parseOptions(processArgs);
 
-    /** Get all file references */
-    const references = await getFileReferences(args[0]);
+    let references: FileReferences;
+
+    /** Check if the first argument is an action ('compile', 'translate', 'assemble') */
+    if (COMMANDS[args[0]]) {
+        /** Get references that match the file extension associated with the action */
+        references = await getFileReferences(args[1], COMMANDS[args[0]]);
+    }
+    /** Derive the action automatically based on the highest priority extension */
+    else {
+        references = await getFileReferences(args[0]);
+    }
+
+    /** Validate references */
     if (!references.inputFiles.length) {
         console.error('No input files to process!');
         process.exit(1);
     }
-
-    /** Switch between extensions */
-    switch(references.ext as string) {
-        case '.jack':
-            await compile(references, options);
-            break;
-        case '.vm':
-            await translate(references, options);
-            break;
-        case '.asm':
-            await assemble(references);
-            break;
-    }
+    
+    /** Perform the action based on the extension */
+    await EXTENSIONS[references.ext as string](references, options);
 };
 
 main(process.argv);

@@ -148,6 +148,7 @@ project11/files/**/*.asm
 project11/files/**/*.hack
 project11/files/**/*.xml
 n2t/bundle/
+bin/
 *.zip
 *.DS_STORE
 *.txt

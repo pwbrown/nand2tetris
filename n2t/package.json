@@ -1,11 +1,14 @@
 {
   "name": "n2t",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "main": "index.js",
+  "bin": {
+    "n2t": "./bin/n2t.js"
+  },
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc -p tsconfig.build.json",
-    "n2t": "node dist/n2t.js",
+    "clean": "rimraf bin",
+    "build": "npm run clean && node build.mjs",
+    "prepare": "npm run build",
     "test": "jest",
     "test:cov": "jest --coverage"
   },
@@ -16,13 +19,11 @@
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.14",
+    "@types/node": "^16.18.126",
     "esbuild": "^0.25.5",
     "jest": "^29.7.0",
     "rimraf": "^5.0.10",
     "ts-jest": "^29.3.4",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "@types/node": "^16.18.126"
   }
 }

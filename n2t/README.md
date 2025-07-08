@@ -4,6 +4,7 @@
 
 As discussed in the main [README](../README.md#n2t-command-line-utility) file, this CLI is designed to be a single program that can do all of the following actions:
 
+- Take one or more `.jack` files and compile them into Jack VM language generating a single `.vm` file per `.jack` file
 - Take one or more `.vm` files representing Jack VM language, and generate a single `.asm` Hack assembly file as output.
 - Take one or more `.asm` Hack assembly files, and generate a single `.hack` file containing 16 bit binary hack instructions.
 
@@ -21,52 +22,86 @@ Additionally I included a `BaseParser` that includes all the boilerplate of acce
 2. Move to n2t directory: `cd n2t`
 3. Install NodeJS: `nvm install`
 4. Install build dependencies: `npm install`
-5. Build the n2t CLI: `npm run build`
+5. Build and Link the n2t CLI: `npm link n2t`
+6. (If source code changes are made) Rebuild and Link the CLI: `npm unlink n2t && npm link n2t`
 
 ## Usage
 
-### Hack Assembly to Hack Binary
+### Compile Jack Code (.jack) to Jack VM Code (.vm)
+
+_**Compile a single Jack file into VM code**_
+```sh
+n2t compile ./MyCode.jack
+# generates ./MyCode.vm
+```
+
+_**Recursively compile all Jack files in a directory into VM code**_
+```sh
+# ./MyCode is a directory (possibly nested) containing .jack files
+n2t compile ./MyCode
+# generates ./MyCode/**/*.vm
+```
+
+_**Additional Options**_
+```sh
+# Also generates XML files for the tokenizer and parse tree
+n2t compile ./MyCode.jack --xml
+
+# Adds line and column annotates to the xml output
+n2t compile ./MyCode.jack --xml --source-map
+
+# Annotates the .vm code with helpful debugging comments
+n2t compile ./MyCode.jack --annotate
+```
+
+### Translate Jack VM Code (.vm) to Hack Assembly (.asm)
+
+_**Assemble a single .vm file into a .asm file**_
+```sh
+n2t translate ./MyCode.vm
+# generates ./MyCode.asm
+```
+
+_**Recursively assemble all .vm files within a directory into a SINGLE .asm file (action is derived from the file extension)**_
+```sh
+# ./my-directory is a directory (possibly nested) containing .vm files
+npm translate ./my-directory
+# generates a single ./my-directory/my-directory.asm
+```
+
+_**Additional Options**_
+```sh
+# Annotates the .asm code with helpful debugging comments
+n2t translate ./MyCode.vm --annotate
+```
+
+### Assemble Hack Assembly (.asm) into Hack Binary (.hack)
 
 _**Assemble a single .asm file into a .hack file**_
 ```sh
-npm run n2t -- ./MyCode.asm
-# generates ./MyCode.hack as output
+n2t assemble ./MyCode.asm
+# generates ./MyCode.hack
 ```
 
 _**Recursively assemble all .asm files within a directory into .hack files**_
 ```sh
-npm run n2t -- ./my-directory/**/*.asm
-# generates ./my-directory/**/*.hack for each input .asm file as output
+# ./my-directory is a directory (possibly nested) containing .asm files
+n2t assemble ./my-directory
+# generates ./my-directory/**/*.hack
 ```
 
-### Jack VM to Hack Assembly
+## Inferred Actions
 
-_**Assemble a single .vm file into a .asm file**_
-```sh
-npm run n2t -- ./MyCode.vm
-# generates ./MyCode.asm as output
-```
+The `n2t` command can be called directly with a file or directory reference without the need for specifying an action. When an action keyword (`compile`, `translate`, `assemble`) is not provided, the action will be inferred using the file extension based on the following priority:
 
-_**Recursively assemble all .vm files within a directory into a SINGLE .asm file**_
-```sh
-npm run n2t -- ./my-directory/**/*.vm
-# generates a single ./my-directory/my-directory.asm file as the output
-```
+1. `.jack`: Compile
+2. `.vm`: Translate
+3. `.asm`: Assemble
 
-### Jack Code to VM Code (Compilation)
+The reasoning behind this inferred action behavior is to facilitate project submission. In the Nand2Tetris course, the compiler, translator, and assemble are built as 3 distinct projects and so each program did not require specifying an action. I decided to combine all 3 actions into a single tool to allow for sharing code.
 
-_**Perform lexical analysis and parsing on a single Jack file to generate the token and parse tree XML files**_
-```sh
-npm run n2t -- ./MyCode.jack
-# generates:
-#   - ./MyCodeT.xml
-#   - ./MyCode.xml
-```
+### Examples
 
-_**Perform lexical analysis and parsing on a directory of nested Jack files to generate the token and parse tree XML files**_
-```sh
-npm run n2t -- ./MyCode/**/*.jack
-# generates:
-#   - ./MyCode/**/*T.xml
-#   - ./MyCode/**/*.xml
-```
+- If the directory `./MyDir` ONLY contains `.asm` files, then calling `n2t ./MyDir` will behave the same as `n2t assemble ./MyDir`
+- If the directory `./MyDir` contains both `.vm` and `asm` files, then calling `n2t ./MyDir` will behave the same as `n2t translate ./MyDir`
+- If the directory `./MyDir` contains at least one `.jack` file, then calling `n2t ./MyDir` will behave the same as `n2t compile ./MyDir`

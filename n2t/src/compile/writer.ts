@@ -53,11 +53,12 @@ export class Writer extends BaseWriter {
     private subroutineName: string | null = null;
     private classSymbols: { [sym: string]: Sym } = {};
     private routineSymbols: { [sym: string]: Sym } = {};
-    private labelIndex = 0;
+    private labelIndexes: { [label: string]: number} = {};
 
     constructor(
         private root: ClassObj,
         outputFile: string,
+        private annotate: boolean,
     ) {
         super(outputFile);
         this.className = this.root.classNameIdentifier.token.literal;
@@ -68,7 +69,7 @@ export class Writer extends BaseWriter {
         /** Compile the program and write to the output file */
         const allLines = this.compileClass(this.root);
         for (const line of allLines) {
-            const indent = line && !line.startsWith('function') && !line.startsWith('label');
+            const indent = line && !/^(function|label|\/[*]|\s[*])/.test(line);
             this.writeLine(`${indent ? '    ' : ''}${line}`);
         }
 
@@ -85,10 +86,25 @@ export class Writer extends BaseWriter {
             this.compileClassVarDec(varDec);
         }
 
+        /** Annotate class and symbol map */
+        if (this.annotate) {
+            lines.push(
+                '/**',
+                ` * ${obj.toString()}`,
+            );
+            if (Object.keys(this.classSymbols).length) {
+                lines.push(
+                    ' *',
+                    ' * Class Symbol Map:',
+                    ...symbolMapToLines(this.classSymbols).map((line) => ` *   ${line}`),
+                );
+            }
+            lines.push(' */', '');
+        }
+
         /** Compile each subroutine declaration */
         for (const subDec of obj.subroutineDecs) {
             lines.push(...this.compileSubroutine(subDec));
-            lines.push(''); // Empty line between subroutines
         }
 
         return lines;
@@ -120,6 +136,22 @@ export class Writer extends BaseWriter {
         this.compileParameterList(obj.parameterList);
         /** Compile the subroutine body and get the total number of local variables */
         const [bodyLines, locals] = this.compileSubroutineBody(obj.subroutineBody);
+        /** Annotation */
+        if (this.annotate) {
+            lines.push(
+                '',
+                '/**',
+                ` * ${obj.toString()}`,
+            );
+            if (Object.keys(this.routineSymbols).length) {
+                lines.push(
+                    ' *',
+                    ' * Subroutine Symbol Map:',
+                    ...symbolMapToLines(this.routineSymbols).map((line) => ` *   ${line}`)
+                );
+            }
+            lines.push(' */');
+        }
         /** Generate function line with local variable count */
         lines.push(`function ${this.className}.${this.subroutineName} ${locals}`);
         /** Handle memory allocation for constructor function */
@@ -128,6 +160,9 @@ export class Writer extends BaseWriter {
                 .values(this.classSymbols)
                 .filter((sym) => sym.kind === SymKind.this)
                 .length;
+            if (this.annotate) {
+                lines.push('', '// Allocate object memory');
+            }
             lines.push(
                 `push constant ${fieldCount}`,
                 'call Memory.alloc 1',
@@ -136,6 +171,9 @@ export class Writer extends BaseWriter {
         }
         /** Handle 'this' initialization for method */
         else if (subType === 'method') {
+            if (this.annotate) {
+                lines.push('', '// Initialize "this" pointer');
+            }
             lines.push(
                 'push argument 0',
                 'pop pointer 0',
@@ -200,6 +238,9 @@ export class Writer extends BaseWriter {
     /** Compile a let statement */
     private compileLet(obj: LetStatementObj): string[] {
         const lines: string[] = [];
+        if (this.annotate) {
+            lines.push('', `// ${obj.toString()}`);
+        }
         /** Handle setting up array assignment */
         if (obj.variable instanceof IndexExpressionObj) {
             /** Passing false to indicate that we do not want to pop the pointer */
@@ -227,12 +268,16 @@ export class Writer extends BaseWriter {
     /** Compile an if statement */
     private compileIf(obj: IfStatementObj): string[] {
         const lines: string[] = [];
+        if (this.annotate) {
+            lines.push('', `// ${obj.toString()}`);
+        }
         /** Compile and negate condition expression */
         lines.push(
             ...this.compileExpression(obj.conditionExpression),
             'not',
         );
-        const endLabel = this.createLabel();
+        const ifLabel = this.indexLabel(`IF`);
+        const endLabel = `END_${ifLabel}`;
         const consequence = this.compileStatements(obj.consequenceStatements);
         if (!obj.altStatements) {
             /** Handle if only */
@@ -242,7 +287,7 @@ export class Writer extends BaseWriter {
             );
         } else {
             /** Handle if-else */
-            const elseLabel = this.createLabel();
+            const elseLabel = `ELSE_${ifLabel}`;
             lines.push(
                 `if-goto ${elseLabel}`,
                 ...consequence,
@@ -258,15 +303,16 @@ export class Writer extends BaseWriter {
 
     /** Compile a while loop */
     private compileWhile(obj: WhileStatementObj): string[] {
-        const label = this.createLabel();
-        const endLabel = this.createLabel();
+        const whileLabel = this.indexLabel('WHILE');
+        const endLabel = `END_${whileLabel}`;
         return [
-            `label ${label}`,
+            ...(this.annotate ? ['', `// ${obj.toString()}`] : []),
+            `label ${whileLabel}`,
             ...this.compileExpression(obj.expression),
             'not',
             `if-goto ${endLabel}`,
             ...this.compileStatements(obj.statements),
-            `goto ${label}`,
+            `goto ${whileLabel}`,
             `label ${endLabel}`,
         ];
     }
@@ -274,6 +320,7 @@ export class Writer extends BaseWriter {
     /** Compile a do statement */
     private compileDo(obj: DoStatementObj): string[] {
         return [
+            ...(this.annotate ? ['', `// ${obj.toString()}`] : []),
             ...this.compileSubroutineCall(obj.subroutineCall),
             'pop temp 0',
         ];
@@ -281,17 +328,17 @@ export class Writer extends BaseWriter {
 
     /** Compile a return statement */
     private compileReturn(obj: ReturnStatementObj): string[] {
-        if (obj.expression) {
-            return [
-                ...this.compileExpression(obj.expression),
-                'return',
-            ];
-        } else {
-            return [
-                'push constant 0',
-                'return',
-            ];
+        const lines: string[] = [];
+        if (this.annotate) {
+            lines.push('', `// ${obj.toString()}`);
         }
+        if (obj.expression) {
+            lines.push(...this.compileExpression(obj.expression));
+        } else {
+            lines.push('push constant 0');
+        }
+        lines.push('return');
+        return lines;
     }
 
     /** Compile an expression */
@@ -515,8 +562,92 @@ export class Writer extends BaseWriter {
     /******************** LABELING *****************/
 
     /** Indexes a label and auto-increments */
-    private createLabel() {
-        this.labelIndex++;
-        return `${this.className}_${this.labelIndex}`;
+    private indexLabel(label: string) {
+        this.labelIndexes[label] = typeof this.labelIndexes[label] === 'number'
+            ? this.labelIndexes[label] + 1
+            : 0;
+        return `${label}_${this.labelIndexes[label]}`;
     }
+}
+
+/************************** UTILITIES ****************************/
+
+const KIND_LABEL = 'Kind';
+const INDEX_LABEL = 'Index';
+const NAME_LABEL = 'Name';
+const TYPE_LABEL = 'Type';
+
+/** Formats a symbol table into a list of strings formatted like a markdown style table */
+const symbolMapToLines = (symbols: { [sym: string]: Sym }): string[] => {
+    const lines: string[] = [];
+
+    let maxKind = KIND_LABEL.length;
+    let maxName = NAME_LABEL.length;
+    let maxType = TYPE_LABEL.length;
+    
+    /** Get sorted list of symbols */
+    const symbolList = Object.entries(symbols)
+        .sort(([aName, aSym], [bName, bSym]) => {
+            /** Sort by kind first and then index */
+            if (aSym.kind < bSym.kind) {
+                return -1;
+            } else if (aSym.kind > bSym.kind) {
+                return 1;
+            } else if (aSym.index < bSym.index) {
+                return -1;
+            } else if (aSym.index > bSym.index) {
+                return 1;
+            } else {
+                return 0;
+            }
+        })
+        .map<[string, Sym]>(([name, sym]) => {
+            /** Update maximum character lengths */
+            if (name.length > maxName) {
+                maxName = name.length;
+            }
+            if (sym.kind.length > maxKind) {
+                maxKind = sym.kind.length;
+            }
+            if (sym.type.length > maxType) {
+                maxType = sym.type.length;
+            }
+            
+            return [name, sym];
+        });
+
+    /** Header Row */
+    lines.push(`| ${
+        KIND_LABEL.padEnd(maxKind, ' ')
+    } | ${INDEX_LABEL} | ${
+        NAME_LABEL.padEnd(maxName, ' ')
+    } | ${
+        TYPE_LABEL.padEnd(maxType, ' ')
+    } |`);
+    
+    /** Filler Row */
+    lines.push(`| ${
+        ''.padEnd(maxKind, '-')
+    } | ${
+        ''.padEnd(INDEX_LABEL.length, '-')
+    } | ${
+        ''.padEnd(maxName, '-')
+    } | ${
+        ''.padEnd(maxType, '-')
+    } |`)
+    
+    /** Symbol Rows */
+    symbolList.forEach(([name, sym]) => {
+        lines.push(`| ${
+            sym.kind.padEnd(maxKind, ' ')
+        } | ${
+            sym.index.toString().padEnd(INDEX_LABEL.length, ' ')
+        } | ${
+            name.padEnd(maxName, ' ')
+        } | ${
+            sym.type.padEnd(maxType, ' ')
+        } |`)
+    });
+
+    return lines;
 }
