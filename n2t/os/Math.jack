@@ -1,15 +1,168 @@
+/**
+ * Jack OS : Math
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/n2t/os/Math.jack
+ * 
+ * My implementation of the Jack OS Math class for Nand2Tetris project 12
+ */
+
 class Math {
-    function void init() {}
+    static Array bits;
+    static int wordSize, maxDivY, sqrtConst;
 
-    function int multiply(int x, int y) {}
+    /**
+     * Initialize the Math class' static values
+     */
+    function void init() {
+        var int i, mask;
 
-    function int divide(int x, int y) {}
+        // HARDWARE WORD SIZE
+        let wordSize = 16;
+        
+        let i = 0;
 
-    function int sqrt(int x) {}
+        // Create a precomputed array of bit mask values
+        let bits = Array.new(wordSize);
+        let mask = 1;
+        while (i < wordSize) {
+            let bits[i] = mask;
+            let mask = mask + mask;
+            let i = i + 1;
+        }
+        
+        // Maximum value such that if y is doubled, it will overflow to negative
+        let maxDivY = bits[14];
 
-    function int abs(int x) {}
+        // Square root constant value representing "n/2 - 1" where n is the word size
+        // This computation MUST occur last in the init function after all other static variables
+        // have been initialized to use the divide operator
+        let sqrtConst = (wordSize / 2) - 1;
+    }
 
-    function int min(int x, int y) {}
+    /**
+     * Multiply 2 numbers together (recommendation: use '*' syntatic sugar)
+     * using the "Long Multiplication" algorithm
+     */
+    function int multiply(int x, int y) {
+        var int i, sum, shiftX;
 
-    function int max(int x, int y) {}
+        // Initialize values
+        let i = 0;
+        let sum = 0;
+        let shiftX = x;
+
+        while (i < wordSize) {
+            // Check if the i'th bit of y is equal to 1
+            if (y & bits[i]) {
+                let sum = sum + shiftX;
+            }
+            let shiftX = shiftX + shiftX; // left shift x value
+            let i = i + 1;
+        }
+
+        return sum;
+    }
+
+    /**
+     * Divide 2 numbers (recommendation: use '/' syntatic sugar)
+     */
+    function int divide(int x, int y) {
+        var int q;
+
+        // Throw divide by zero errors
+        if (y = 0) {
+            do Sys.error(3);
+            return 0;
+        }
+
+        // Run division on positive numbers first
+        let q = Math.divPos(Math.abs(x), Math.abs(y));
+
+        // Return positive number if both signs were the same
+        if ((x < 0) = (y < 0)) {
+            return q;
+        } else {
+            return -q; // Return negative if one of the 
+        }
+    }
+
+    /**
+     * Divides 2 numbers assuming they start as positive numbers
+     */
+    function int divPos(int x, int y) {
+        var int q, sum;
+
+        // Ignore floating point numbers
+        if (y > x) {
+            return 0;
+        }
+
+        // Only call recursive divide if y will not overflow when doubled
+        // this avoids an unecessary function call
+        if (y < maxDivY) {
+            let q = Math.divPos(x, y + y);
+            let sum = q + q;
+        } else {
+            let sum = 0;
+        }
+
+        if ((x - (sum * y)) < y) {
+            return sum;
+        } else {
+            return sum + 1;
+        }
+    }
+
+    /**
+     * Calculate the square root of a number
+     */
+    function int sqrt(int x) {
+        var int y, j, yBit, doubleYBit;
+        
+        let y = 0;
+        let j = sqrtConst;
+
+        while (~(j < 0)) {
+            let yBit = y + bits[j];
+            let doubleYBit = yBit * yBit;
+
+            if (~(doubleYBit > x) & (doubleYBit > 0)) {
+                let y = yBit;
+            }
+
+            let j = j - 1;
+        }
+
+        return y;
+    }
+
+    /**
+     * Absolute value of a number
+     */
+    function int abs(int x) {
+        if (x < 0) {
+            return -x;
+        }
+        return x;
+    }
+
+    /**
+     * Minimum value of 2 numbers
+     */
+    function int min(int x, int y) {
+        if (x < y) {
+            return x;
+        }
+        return y;
+    }
+    
+    /**
+     * Maximum value of 2 numbers
+     */
+    function int max(int x, int y) {
+        if (x > y) {
+            return x;
+        }
+        return y;
+    }
 }
