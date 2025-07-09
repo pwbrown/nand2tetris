@@ -37,6 +37,8 @@ class Math {
         // This computation MUST occur last in the init function after all other static variables
         // have been initialized to use the divide operator
         let sqrtConst = (wordSize / 2) - 1;
+
+        return;
     }
 
     /**

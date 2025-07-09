@@ -1,11 +1,104 @@
+/**
+ * Jack OS : Memory
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/n2t/os/Memory.jack
+ * 
+ * My implementation of the Jack OS Memory class for Nand2Tetris project 12
+ */
+
 class Memory {
-    function void init() {}
+    static Array ramBase, freeList;
 
-    function int peek(int address) {}
+    /**
+     * Initialize the Memory class' static values
+     */
+    function void init() {
+        var int dataMemorySize, heapBase, heapSize;
+        
+        // Fill in base addresses for memory and heap (freeList)
+        let ramBase = 0; // Sets the base address of the entire ram
+        let dataMemorySize = 16384; // Number of words addressable for data
+        let heapBase = 2048;
+        
+        // Set the current pointer for the freeList to the start of the heap
+        let freeList = heapBase;
+        
+        // Set the next segment and block sizes
+        let heapSize = dataMemorySize - heapBase; // 16384 is the size of the first RAM16K chip before the screen memory map
+        let freeList[0] = null;
+        let freeList[1] = heapSize - 2; // Block size excludes the next segment pointer and block size value
 
-    function void poke(int address, int value) {}
+        return;
+    }
 
-    function Array alloc(int size) {}
+    /**
+     * Peek at a value in memory
+     */
+    function int peek(int address) {
+        return ramBase[address];
+    }
 
-    function void deAlloc(Array o) {}
+    /**
+     * Poke/set a value in memory at the given address
+     */
+    function void poke(int address, int value) {
+        let ramBase[address] = value;
+        return;
+    }
+
+    /**
+     * Searches for a block within the free list to allocate
+     */
+    function Array alloc(int size) {
+        var Array segment;
+        var int allocSize, segmentSize;
+
+        let allocSize = size + 2; // Accounts for overhead
+
+        // Loop until a segment is found or no segments are left
+        let segment = freeList;
+        while (true) {
+            // Use a first fit approach to find a segment
+            let segmentSize = segment[1];
+            // Segment is large enough to allocate
+            if (~(segmentSize < allocSize)) {
+                // Update current segment size first
+                let segmentSize = segmentSize - allocSize;
+                let segment[1] = segmentSize;
+                // Move the segment to the new allocated space
+                let segment = segment + 2 + segmentSize;
+                // Return the base address of the allocated segment's block
+                return segment + 2;
+            }
+            // Attempt to search in the next segment
+            let segment = segment[0];
+            if (segment = null) {
+                do Sys.error(5);
+                return 0;
+            }
+        }
+    }
+
+    /**
+     * Deallocates an object from memory
+     */
+    function void deAlloc(Array obj) {
+        var Array objSegment, curr, next;
+
+        let objSegment = obj - 2; // move to beginning of segment (overhead)
+        let curr = freeList;
+        let next = curr[0];
+
+        // Go all the way to the last item (TODO: insert in memory order to implement defrag)
+        while (~(next = null)) {
+            let curr = next;
+            let next = curr[0];
+        }
+
+        // Append object segment to the end of the free list
+        let objSegment[0] = null;
+        let curr[0] = objSegment;
+
+        return;
+    }
 }
