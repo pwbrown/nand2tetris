@@ -26,7 +26,7 @@ class Memory {
         // Set the next segment and block sizes
         let heapSize = dataMemorySize - heapBase; // 16384 is the size of the first RAM16K chip before the screen memory map
         let freeList[0] = null;
-        let freeList[1] = heapSize - 2; // Block size excludes the next segment pointer and block size value
+        let freeList[1] = heapSize - 2; // Block size excludes the overhead values
 
         return;
     }
@@ -50,29 +50,56 @@ class Memory {
      * Searches for a block within the free list to allocate
      */
     function Array alloc(int size) {
-        var Array segment;
-        var int allocSize, segmentSize;
+        var Array prev, curr, next;
+        var int allocSize, currSize;
 
-        let allocSize = size + 2; // Accounts for overhead
+        // Make sure that the free list is not empty
+        if (freeList = null) {
+            do Sys.error(5);
+            return 0;
+        }
 
-        // Loop until a segment is found or no segments are left
-        let segment = freeList;
+        let allocSize = size + 2; // Includes overhead
+
+        let prev = null;
+        let curr = freeList;
+
+        // Locate the first (first fit) available segment that is large enough
         while (true) {
-            // Use a first fit approach to find a segment
-            let segmentSize = segment[1];
-            // Segment is large enough to allocate
-            if (~(segmentSize < allocSize)) {
-                // Update current segment size first
-                let segmentSize = segmentSize - allocSize;
-                let segment[1] = segmentSize;
-                // Move the segment to the new allocated space
-                let segment = segment + 2 + segmentSize;
-                // Return the base address of the allocated segment's block
-                return segment + 2;
+            let currSize = curr[1];
+            // Check if the current segment is exactly the right size with or without overhead
+            // size <= currSize <= allocSize
+            // this means that a reused segment can have up to 2 unused words, but I'm fine with that
+            if ((~(currSize < size)) & (~(currSize > allocSize))) {
+                let next = curr[0];
+                // Attempt to point the previous segment at the next segment
+                if ((~(prev = null)) & (~(next = null))) {
+                    prev[0] = next;
+                }
+                // Move the free list to the start of the next segment if the current was the start of the free list
+                if (prev = null) {
+                    freeList = next;
+                }
+                // Nullify the segment pointer (no need to set size since it's already correct)
+                let curr[0] = null;
+                return curr + 2;
             }
-            // Attempt to search in the next segment
-            let segment = segment[0];
-            if (segment = null) {
+            // Check if the current segment is large enough to allocate
+            if (currSize > allocSize) {
+                // Slice off a block from the end of the segment
+                let currSize = currSize - allocSize;
+                let curr[1] = currSize;
+                // Move the segment to the new allocated space and set overhead
+                let curr = curr + 2 + currSize;
+                let curr[0] = null;
+                let curr[1] = size;
+                // Return the base address of the allocated segment's block
+                return curr + 2;
+            }
+            // Increment to the next segment
+            let prev = curr;
+            let curr = curr[0];
+            if (curr = null) {
                 do Sys.error(5);
                 return 0;
             }
