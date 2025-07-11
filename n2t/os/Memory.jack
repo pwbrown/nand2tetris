@@ -8,6 +8,7 @@
 
 class Memory {
     static Array ramBase, freeList;
+    static boolean fragmented;
 
     /**
      * Initialize the Memory class' static values
@@ -17,16 +18,24 @@ class Memory {
         
         // Fill in base addresses for memory and heap (freeList)
         let ramBase = 0; // Sets the base address of the entire ram
-        let dataMemorySize = 16384; // Number of words addressable for data
+        let dataMemorySize = 16384; // Number of words addressable for data (first RAM16K chip before screen memory map)
         let heapBase = 2048;
         
         // Set the current pointer for the freeList to the start of the heap
         let freeList = heapBase;
         
         // Set the next segment and block sizes
-        let heapSize = dataMemorySize - heapBase; // 16384 is the size of the first RAM16K chip before the screen memory map
+        let heapSize = dataMemorySize - heapBase;
         let freeList[0] = null;
         let freeList[1] = heapSize - 2; // Block size excludes the overhead values
+
+        // Keeps track of the fragmented state of memory
+        // Any call to deAlloc can put the memory into a "fragmented" state
+        // and we will use this flag to call defrag anytime an alloc call fails.
+        // Once defrag is called, the memory is considered NOT framgmened so if
+        // the retry alloc attempt still fails, we can throw an error instead of
+        // running an infinite alloc -> defrag loop :D
+        let fragmented = false;
 
         return;
     }
@@ -100,32 +109,97 @@ class Memory {
             let prev = curr;
             let curr = curr[0];
             if (curr = null) {
-                do Sys.error(5);
-                return 0;
+                // There is not a large enough segment to fit the new allocation
+                if (fragmented) {
+                    // Attempt to defrag the memory before retrying an allocation
+                    do Memory.defrag();
+                    return Memory.alloc(size);
+                } else {
+                    // Memory is already defragmented, so throw a fatal error
+                    do Sys.error(5);
+                    return 0;
+                }
             }
         }
     }
 
     /**
-     * Deallocates an object from memory
+     * Deallocates an object from memory and inserts the segment into the free list
+     * in memory address order to facilitate defragging
      */
     function void deAlloc(Array obj) {
-        var Array objSegment, curr, next;
+        var Array prev, curr, next, objSeg;
+        var boolean loop;
 
-        let objSegment = obj - 2; // move to beginning of segment (overhead)
+        let prev = null;
         let curr = freeList;
-        let next = curr[0];
+        let objSeg = obj - 2; // move to the start of the object segment overhead
 
-        // Go all the way to the last item (TODO: insert in memory order to implement defrag)
-        while (~(next = null)) {
-            let curr = next;
-            let next = curr[0];
+        let loop = true;
+        while(loop) {
+            // Insert the segment before the current segment if address comes before
+            if (objSeg < curr) {
+                let objSeg[0] = curr;
+                if (prev = null) {
+                    // Deallocated segment becomes the start of the free list
+                    let freeList = objSeg;
+                } else {
+                    // Previous item now points to the deallocated segment
+                    let prev[0] = objSeg;
+                }
+                let loop = false;
+            } else {
+                let next = curr[0];
+                if (next = null) {
+                    // Append obj segment to the end of the free list
+                    let curr[0] = objSeg;
+                    let loop = false;
+                } else {
+                    // Move to the next segment
+                    let prev = curr;
+                    let curr = next;
+                }
+            }
         }
 
-        // Append object segment to the end of the free list
-        let objSegment[0] = null;
-        let curr[0] = objSegment;
+        // Once deAlloc has finished, consider the memory "fragmented"
+        let framgmened = true;
+        return;
+    }
 
+    /**
+     * Defrags the memory by merging free list segments where possible
+     */
+    function void defrag() {
+        var Array curr, next;
+        var int currSize, nextSize;
+        var boolean loop;
+
+        let curr = freeList;
+
+        // Start defragging the freelist
+        let loop = true;
+        while (loop) {
+            let next = curr[0];
+            // End the loop if a next segment is not found
+            if (next = null) {
+                loop = false;
+            } else {
+                let currSize = curr[1];
+                // Merge if the end of the current segment matches the beginning of the next
+                if ((curr + 2 + currSize) = next) {
+                    let curr[0] = next[0]; // point current after next
+                    let curr[1] = currSize + next[1] + 2; // Add the next segment's size and overhead (2) to the current segment's size
+                    // We want to keep the current segment the same until we have finished merging all segments so do nothing here
+                } else {
+                    // Next segment is not connected, so move current forward to repeat the process
+                    let curr = next;
+                }
+            }
+        }
+
+        // Update the framented flag
+        let fragmented = false;
         return;
     }
 }
