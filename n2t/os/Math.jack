@@ -18,12 +18,11 @@ class Math {
 
         // HARDWARE WORD SIZE
         let wordSize = 16;
-        
-        let i = 0;
 
         // Create a precomputed array of bit mask values
         let bits = Array.new(wordSize);
         let mask = 1;
+        let i = 0;
         while (i < wordSize) {
             let bits[i] = mask;
             let mask = mask + mask;

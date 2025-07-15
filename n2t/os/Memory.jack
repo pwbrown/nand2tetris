@@ -7,7 +7,7 @@
  */
 
 class Memory {
-    static Array ramBase, freeList;
+    static Array ram, freeList;
     static boolean fragmented;
 
     /**
@@ -17,7 +17,7 @@ class Memory {
         var int dataMemorySize, heapBase, heapSize;
         
         // Fill in base addresses for memory and heap (freeList)
-        let ramBase = 0; // Sets the base address of the entire ram
+        let ram = 0; // Sets the base address of the entire ram
         let dataMemorySize = 16384; // Number of words addressable for data (first RAM16K chip before screen memory map)
         let heapBase = 2048;
         
@@ -33,7 +33,7 @@ class Memory {
         // Any call to deAlloc can put the memory into a "fragmented" state
         // and we will use this flag to call defrag anytime an alloc call fails.
         // Once defrag is called, the memory is considered NOT framgmened so if
-        // the retry alloc attempt still fails, we can throw an error instead of
+        // the retried alloc attempt still fails, we can throw an error instead of
         // running an infinite alloc -> defrag loop :D
         let fragmented = false;
 
@@ -44,14 +44,14 @@ class Memory {
      * Peek at a value in memory
      */
     function int peek(int address) {
-        return ramBase[address];
+        return ram[address];
     }
 
     /**
      * Poke/set a value in memory at the given address
      */
     function void poke(int address, int value) {
-        let ramBase[address] = value;
+        let ram[address] = value;
         return;
     }
 
@@ -83,11 +83,11 @@ class Memory {
                 let next = curr[0];
                 // Attempt to point the previous segment at the next segment
                 if ((~(prev = null)) & (~(next = null))) {
-                    prev[0] = next;
+                    let prev[0] = next;
                 }
                 // Move the free list to the start of the next segment if the current was the start of the free list
                 if (prev = null) {
-                    freeList = next;
+                    let freeList = next;
                 }
                 // Nullify the segment pointer (no need to set size since it's already correct)
                 let curr[0] = null;
@@ -109,9 +109,9 @@ class Memory {
             let prev = curr;
             let curr = curr[0];
             if (curr = null) {
-                // There is not a large enough segment to fit the new allocation
+                // There is not enough space to allocate the new block
                 if (fragmented) {
-                    // Attempt to defrag the memory before retrying an allocation
+                    // Attempt to defrag the memory before retrying the allocation
                     do Memory.defrag();
                     return Memory.alloc(size);
                 } else {
@@ -163,7 +163,7 @@ class Memory {
         }
 
         // Once deAlloc has finished, consider the memory "fragmented"
-        let framgmened = true;
+        let fragmented = true;
         return;
     }
 
@@ -172,7 +172,7 @@ class Memory {
      */
     function void defrag() {
         var Array curr, next;
-        var int currSize, nextSize;
+        var int currSize;
         var boolean loop;
 
         let curr = freeList;
@@ -183,7 +183,7 @@ class Memory {
             let next = curr[0];
             // End the loop if a next segment is not found
             if (next = null) {
-                loop = false;
+                let loop = false;
             } else {
                 let currSize = curr[1];
                 // Merge if the end of the current segment matches the beginning of the next
