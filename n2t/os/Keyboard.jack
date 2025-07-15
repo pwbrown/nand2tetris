@@ -6,7 +6,6 @@
  * My implementation of the Jack OS Keyboard class for Nand2Tetris project 12
  */
 
-
 class Keyboard {
     static Array kbd;
 
