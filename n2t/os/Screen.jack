@@ -1,6 +1,20 @@
+/**
+ * Jack OS : Screen
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/n2t/os/Screen.jack
+ * 
+ * My implementation of the Jack OS Screen class for Nand2Tetris project 12
+ * 
+ * To avoid additional function calls and therefore additional VM and assembly lines,
+ * I decided to replace Memory.poke and Memory.peek calls with simple direct memory
+ * access using the base screen address. This implementation also has safeguards in place
+ * to prevent writing to memory outside of the screen map. This implementation also prevents
+ * all forms of screen overflow.
+ */
+
 class Screen {
-    static Array screenBase, bits;
-    static int width, height, wordSize, rowWords, colWords;
+    static Array screen, bits;
+    static int width, height, wordSize, rowWords, maxX, maxY;
     static boolean color;
 
     /**
@@ -10,7 +24,7 @@ class Screen {
         var int i, mask;
 
         /** Set the screen base address */
-        let screenBase = 16384;
+        let screen = 16384;
 
         /** Set screen dimensions in pixels */
         let width = 512;
@@ -19,6 +33,10 @@ class Screen {
         /** Set word size and row word count */
         let wordSize = 16;
         let rowWords = width / wordSize;
+
+        /** Maximum index values */
+        let maxX = width - 1;
+        let maxY = height - 1;
 
         /** Initialize color */
         let color = false;
@@ -39,12 +57,12 @@ class Screen {
      * Clear the entire screen
      */
     function void clearScreen() {
-        var Array addr, endAddr;
-        let addr = screenBase;
-        let endAddr = screenBase + (height * rowWords);
-        while (~(addr > endAddr)) {
-            do Memory.poke(addr, 0);
-            let addr = addr + 1;
+        var int i, end;
+        let i = 0;
+        let end = (height * rowWords) + 1;
+        while (i < end) {
+            let screen[i] = 0;
+            let i = i + 1;
         }
         return;
     }
@@ -61,25 +79,34 @@ class Screen {
      * Draw a single pixel on the screen
      */
     function void drawPixel(int x, int y) {
-        do Screen.drawWithAddrMask(
-            screenBase + (rowWords * y) + (x / wordSize),
+        /** Ignore pixel overflow */
+        if ((x < 0) | (x > maxX) | (y < 0) | (y > maxY)) {
+            return;
+        }
+        do Screen.drawIndexMask(
+            (rowWords * y) + (x / wordSize),
             bits[x - (wordSize * (x / wordSize))] // bits[x % wordSize]
         );
         return;
     }
 
     /**
-     * Draw one or more pixels given a pre-computed address and mask value
+     * Draw one or more pixels given a pre-computed
+     * screen address index and mask value
      */
-    function void drawWithAddrMask(Array addr, int mask) {
+    function void drawIndexMask(int i, int mask) {
         var int value;
-        let value = Memory.peek(addr);
+        /**
+         * Using a value variable to store current value and reduce
+         * index expression calls which require more stack operations
+         */
+        let value = screen[i];
         if (color) {
             let value = value | mask;
         } else {
             let value = value & ~mask;
         }
-        do Memory.poke(addr, value);
+        let screen[i] = value;
         return;
     }
 
@@ -111,8 +138,12 @@ class Screen {
      * Draw a vertical line (series of single pixel draw operations)
      */
     function void drawVerticalLine(int x, int y1, int y2) {
-        var int mask;
-        var Array addr;
+        var int i, mask;
+
+        /** Ignore out-of-bounds x coordinate */
+        if ((x < 0) | (x > maxX)) {
+            return;
+        }
 
         /** Swap y values to make sure we draw top down */
         if (y2 < y1) {
@@ -121,15 +152,23 @@ class Screen {
             let y2 = mask;
         }
 
-        /** Set base address and static mask value */
-        let addr = screenBase + (x / wordSize) + (rowWords * y1);
+        /** Discard out-of-bound y coordinates */
+        if (y1 < 0) {
+            let y1 = 0;
+        }
+        if (y2 > maxY) {
+            let y2 = maxY;
+        }
+
+        /** Set base index and static mask value */
+        let i = (x / wordSize) + (rowWords * y1);
         let mask = bits[x - (wordSize * (x / wordSize))];
 
         /** Start drawing from top to bottom */
         while (~(y1 > y2)) {
-            do Screen.drawWithAddrMask(addr, mask);
+            do Screen.drawIndexMask(i, mask);
             let y1 = y1 + 1; // Increment to a row down
-            let addr = addr + rowWords; // Update the address to the next row
+            let i = i + rowWords; // Update the index to the next row
         }
         return;
     }
@@ -138,8 +177,12 @@ class Screen {
      * Draw a horizontal line (series of either partial or full address drawings)
      */
     function void drawHorizontalLine(int x1, int x2, int y) {
-        var Array currAddr, startAddr, endAddr;
-        var int mask, i, end;
+        var int curr, start, end, mask, currBit, endBit;
+
+        /** Ignore overflow y coordinates */
+        if ((y < 0) | (y > maxY)) {
+            return;
+        }
 
         /** Swap x values to ensure drawing from left to right */
         if (x2 < x1) {
@@ -148,36 +191,44 @@ class Screen {
             let x2 = mask;
         }
 
-        /** Set addresses */
-        let currAddr = screenBase + (rowWords * y); // reuse currAddr to set base address
-        let startAddr = currAddr + (x1 / wordSize);
-        let endAddr = currAddr + (x2 / wordSize);
-        let currAddr = startAddr;
+        /** Discard out-of-bound x coordinates */
+        if (x1 < 0) {
+            let x1 = 0;
+        }
+        if (x2 > maxX) {
+            let x2 = maxX;
+        }
 
-        while (~(currAddr > endAddr)) {
-            if ((currAddr > startAddr) & (currAddr < endAddr)) {
-                /** Selects the entire address for drawing */
+        /** Set address indexes */
+        let curr = rowWords * y; // reuse curr to set base index
+        let start = curr + (x1 / wordSize);
+        let end = curr + (x2 / wordSize);
+        let curr = start;
+
+        while (~(curr > end)) {
+            if ((curr > start) & (curr < end)) {
+                /** Selects the entire index for drawing */
                 let mask = -1;
             } else {
                 /** Selects a subset of address bits for drawing */
                 let mask = 0;
                 /** Set current and end bit indexes */
-                let i = 0;
-                let end = wordSize - 1;
-                if (currAddr = startAddr) {
-                    let i = x1 - (wordSize * (x1 / wordSize));
+                let currBit = 0;
+                let endBit = wordSize - 1;
+                if (curr = start) {
+                    let currBit = x1 - (wordSize * (x1 / wordSize)); // x1 % wordSize
                 }
-                if (currAddr = endAddr) {
-                    let end = x2 - (wordSize * (x2 / wordSize));
+                if (curr = end) {
+                    let endBit = x2 - (wordSize * (x2 / wordSize)); // x2 % wordSize
                 }
-                /** Calculate bit mask */
-                while (~(i > end)) {
-                    let mask = mask + bits[i];
-                    let i = i + 1;
+                /** Calculate bit mask as sum of all bit values between the start and end bit indexes */
+                while (~(currBit > endBit)) {
+                    let mask = mask + bits[currBit];
+                    let currBit = currBit + 1;
                 }
             }
-            do Screen.drawWithAddrMask(currAddr, mask);
-            let currAddr = currAddr + 1;
+            do Screen.drawIndexMask(curr, mask);
+            let curr = curr + 1;
         }
         return;
     }
@@ -207,7 +258,7 @@ class Screen {
         }
 
         let diff = 0;
-        while ((~(a > dx)) & (((yInc = 1) & ~(b > dy)) | ((yInc = -1) * ~(b < dy)))) {
+        while ((~(a > dx)) & (((yInc = 1) & ~(b > dy)) | ((yInc = -1) & ~(b < dy)))) {
             do Screen.drawPixel(x1 + a, y1 + b);
             if (diff < 0) {
                 let a = a + 1;
@@ -224,16 +275,22 @@ class Screen {
      * Draw a filled rectangle
      */
     function void drawRectangle(int x1, int y1, int x2, int y2) {
-        var int ty, by;
+        var int temp;
 
-        /** Set top and bottom y values */
-        let ty = Math.min(y1, y2);
-        let by = Math.max(y1, y2);
+        /** Swap coordinates to draw from top to bottom */
+        if (y2 < y1) {
+            let temp = y1;
+            let y1 = y2;
+            let y2 = temp;
+            let temp = x1;
+            let x1 = x2;
+            let x2 = temp;
+        }
 
         /** Draw a series of horizontal lines for the height of the rectangle */
-        while (~(ty > by)) {
-            do Screen.drawHorizontalLine(x1, x2, ty);
-            let ty = ty + 1;
+        while (~(y1 > y2)) {
+            do Screen.drawHorizontalLine(x1, x2, y1);
+            let y1 = y1 + 1;
         }
         return;
     }

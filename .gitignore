@@ -150,6 +150,10 @@ project11/files/**/*.asm
 project11/files/**/*.hack
 project11/files/**/*.xml
 n2t/bundle/
+n2t/temp/
+n2t/os/**/*.vm
+n2t/os/**/*.asm
+n2t/os/**/*.hack
 bin/
 *.zip
 *.DS_STORE
