@@ -1,15 +1,264 @@
 class Screen {
-    function void init() {}
+    static Array screenBase, bits;
+    static int width, height, wordSize, rowWords, colWords;
+    static boolean color;
 
-    function void clearScreen() {}
+    /**
+     * Initialize screen static variables
+     */
+    function void init() {
+        var int i, mask;
 
-    function void setColor(boolean b) {}
+        /** Set the screen base address */
+        let screenBase = 16384;
 
-    function void drawPixel(int x, int y) {}
+        /** Set screen dimensions in pixels */
+        let width = 512;
+        let height = 256;
 
-    function void drawLine(int x1, int y1, int x2, int y2) {}
+        /** Set word size and row word count */
+        let wordSize = 16;
+        let rowWords = width / wordSize;
 
-    function void drawRectangle(int x1, int y1, int x2, int y2) {}
+        /** Initialize color */
+        let color = false;
 
-    function void drawCircle(int x, int y, int r) {}
+        /** Create a precomputed array of bit mask values (same as Math.jack) */
+        let i = 0;
+        let bits = Array.new(wordSize);
+        let mask = 1;
+        while (i < wordSize) {
+            let bits[i] = mask;
+            let mask = mask + mask;
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /**
+     * Clear the entire screen
+     */
+    function void clearScreen() {
+        var Array addr, endAddr;
+        let addr = screenBase;
+        let endAddr = screenBase + (height * rowWords);
+        while (~(addr > endAddr)) {
+            do Memory.poke(addr, 0);
+            let addr = addr + 1;
+        }
+        return;
+    }
+
+    /**
+     * Sets the color attribute
+     */
+    function void setColor(boolean b) {
+        let color = b;
+        return;
+    }
+
+    /**
+     * Draw a single pixel on the screen
+     */
+    function void drawPixel(int x, int y) {
+        do Screen.drawWithAddrMask(
+            screenBase + (rowWords * y) + (x / wordSize),
+            bits[x - (wordSize * (x / wordSize))] // bits[x % wordSize]
+        );
+        return;
+    }
+
+    /**
+     * Draw one or more pixels given a pre-computed address and mask value
+     */
+    function void drawWithAddrMask(Array addr, int mask) {
+        var int value;
+        let value = Memory.peek(addr);
+        if (color) {
+            let value = value | mask;
+        } else {
+            let value = value & ~mask;
+        }
+        do Memory.poke(addr, value);
+        return;
+    }
+
+    /**
+     * Draw a line on the screen
+     */
+    function void drawLine(int x1, int y1, int x2, int y2) {
+        // Single pixel
+        if ((x1 = x2) & (y1 = y2)) {
+            do Screen.drawPixel(x1, y1);
+            return;
+        }
+        // Vertical Line
+        if (x1 = x2) {
+            do Screen.drawVerticalLine(x1, y1, y2);
+            return;
+        }
+        // Horizontal Line
+        if (y1 = y2) {
+            do Screen.drawHorizontalLine(x1, x2, y1);
+            return;
+        }
+        // Diagonal Line
+        do Screen.drawDiagonalLine(x1, y1, x2, y2);
+        return;
+    }
+
+    /**
+     * Draw a vertical line (series of single pixel draw operations)
+     */
+    function void drawVerticalLine(int x, int y1, int y2) {
+        var int mask;
+        var Array addr;
+
+        /** Swap y values to make sure we draw top down */
+        if (y2 < y1) {
+            let mask = y1; // reuse mask as a swap temp variable
+            let y1 = y2;
+            let y2 = mask;
+        }
+
+        /** Set base address and static mask value */
+        let addr = screenBase + (x / wordSize) + (rowWords * y1);
+        let mask = bits[x - (wordSize * (x / wordSize))];
+
+        /** Start drawing from top to bottom */
+        while (~(y1 > y2)) {
+            do Screen.drawWithAddrMask(addr, mask);
+            let y1 = y1 + 1; // Increment to a row down
+            let addr = addr + rowWords; // Update the address to the next row
+        }
+        return;
+    }
+
+    /**
+     * Draw a horizontal line (series of either partial or full address drawings)
+     */
+    function void drawHorizontalLine(int x1, int x2, int y) {
+        var Array currAddr, startAddr, endAddr;
+        var int mask, i, end;
+
+        /** Swap x values to ensure drawing from left to right */
+        if (x2 < x1) {
+            let mask = x1; // reuse mask as swap temp variable
+            let x1 = x2;
+            let x2 = mask;
+        }
+
+        /** Set addresses */
+        let currAddr = screenBase + (rowWords * y); // reuse currAddr to set base address
+        let startAddr = currAddr + (x1 / wordSize);
+        let endAddr = currAddr + (x2 / wordSize);
+        let currAddr = startAddr;
+
+        while (~(currAddr > endAddr)) {
+            if ((currAddr > startAddr) & (currAddr < endAddr)) {
+                /** Selects the entire address for drawing */
+                let mask = -1;
+            } else {
+                /** Selects a subset of address bits for drawing */
+                let mask = 0;
+                /** Set current and end bit indexes */
+                let i = 0;
+                let end = wordSize - 1;
+                if (currAddr = startAddr) {
+                    let i = x1 - (wordSize * (x1 / wordSize));
+                }
+                if (currAddr = endAddr) {
+                    let end = x2 - (wordSize * (x2 / wordSize));
+                }
+                /** Calculate bit mask */
+                while (~(i > end)) {
+                    let mask = mask + bits[i];
+                    let i = i + 1;
+                }
+            }
+            do Screen.drawWithAddrMask(currAddr, mask);
+            let currAddr = currAddr + 1;
+        }
+        return;
+    }
+
+    /**
+     * Draw a diagonal line
+     */
+    function void drawDiagonalLine(int x1, int y1, int x2, int y2) {
+        var int dx, dy, a, b, yInc, diff;
+
+        /** Swap coordinates to ensure that we always move from left to right */
+        if (x2 < x1) {
+            let diff = x1;
+            let x1 = x2;
+            let x2 = diff;
+            let diff = y1;
+            let y1 = y2;
+            let y2 = diff;
+        }
+
+        /** Setup helper variables */
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+        let yInc = 1;
+        if (dy < 0) {
+            let yInc = -1;
+        }
+
+        let diff = 0;
+        while ((~(a > dx)) & (((yInc = 1) & ~(b > dy)) | ((yInc = -1) * ~(b < dy)))) {
+            do Screen.drawPixel(x1 + a, y1 + b);
+            if (diff < 0) {
+                let a = a + 1;
+                let diff = diff + (dy * yInc);
+            } else {
+                let b = b + yInc;
+                let diff = diff - dx;
+            }
+        }
+        return;
+    }
+
+    /**
+     * Draw a filled rectangle
+     */
+    function void drawRectangle(int x1, int y1, int x2, int y2) {
+        var int ty, by;
+
+        /** Set top and bottom y values */
+        let ty = Math.min(y1, y2);
+        let by = Math.max(y1, y2);
+
+        /** Draw a series of horizontal lines for the height of the rectangle */
+        while (~(ty > by)) {
+            do Screen.drawHorizontalLine(x1, x2, ty);
+            let ty = ty + 1;
+        }
+        return;
+    }
+
+    /**
+     * Draw a filled circle
+     */
+    function void drawCircle(int x, int y, int r) {
+        var int xOffset, rSquared, i, xl, xr;
+
+        /** Draw the center horizontal line */
+        do Screen.drawHorizontalLine(x - r, x + r, y);
+
+        /** Draw top and bottom halves */
+        let i = 1;
+        let rSquared = r * r;
+        while (~(i > r)) {
+            let xOffset = Math.sqrt(rSquared - (i * i));
+            let xl = x - xOffset;
+            let xr = x + xOffset;
+            do Screen.drawHorizontalLine(xl, xr, y + i); // top half line
+            do Screen.drawHorizontalLine(xl, xr, y - i); // bottom half line
+            let i = i + 1;
+        }
+
+        return;
+    }
 }
