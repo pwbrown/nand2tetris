@@ -1,7 +1,29 @@
-class Keyboard {
-    function void init() {}
+/**
+ * Jack OS : Keyboard
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/n2t/os/Keyboard.jack
+ * 
+ * My implementation of the Jack OS Keyboard class for Nand2Tetris project 12
+ */
 
-    function char keyPressed() {}
+
+class Keyboard {
+    static Array kbd;
+
+    /**
+     * Initialize the keyboard class
+     */
+    function void init() {
+        /** Set keyboard address */
+        let kbd = 24576;
+    }
+
+    /**
+     * Returns the code of the currently pressed key
+     */
+    function char keyPressed() {
+        return kbd[0];
+    }
 
     function char readChar() {}
 

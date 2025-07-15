@@ -1,5 +1,24 @@
-class Array {
-    constructor Array new(int size) {}
+/**
+ * Jack OS : Array
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/n2t/os/Array.jack
+ * 
+ * My implementation of the Jack OS Array class for Nand2Tetris project 12
+ */
 
-    method void dispose() {}
+class Array {
+    /**
+     * Create a new array of a given size (NOT a constructor)
+     */
+    function Array new(int size) {
+        return Memory.alloc(size);
+    }
+
+    /**
+     * Dispose of the array
+     */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return; 
+    }
 }
