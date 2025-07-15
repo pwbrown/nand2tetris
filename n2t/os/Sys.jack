@@ -1,9 +1,46 @@
+/**
+ * Jack OS : Sys
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/n2t/os/Sys.jack
+ * 
+ * My implementation of the Jack OS Sys (system) class for Nand2Tetris project 12
+ */
+
 class Sys {
-    function void init() {}
+
+    /**
+     * Initialize the system, call the main function, and then halt execution
+     */
+    function void init() {
+        do Memory.init();
+        do Math.init();
+        do Screen.init();
+        do Output.init();
+        do Keyboard.init();
+        do Main.main();
+        do Sys.halt();
+        return;
+    }
     
-    function void halt() {}
+    /**
+     * Halts execution
+     */
+    function void halt() {
+        while (true) {}
+    }
 
-    function void error(int errorCode) {}
+    /**
+     * Prints an error code before halting execution
+     */
+    function void error(int errorCode) {
+        // TODO: print error code
+        
+        do Sys.halt();
+        return;
+    }
 
+    /**
+     * Waits for a given amount of time before resuming execution
+     */
     function void wait(int duration) {}
 }
