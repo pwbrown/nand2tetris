@@ -7,13 +7,21 @@
  */
 
 class Output {
-    static Array charMaps;
-    static int mapIndex;
+    static Array charMaps, screen;
+    static int mapIndex, cursorRow, cursorCol;
 
     /**
      * Initialize the output class static variables
      */
-    function void init() {
+    function void init() {        
+        /** Setup screen info */
+        let screen = 16384; // screen base address
+
+        /** Position the cursor */
+        let cursorRow = 0;
+        let cursorCol = 0;
+
+        /** Setup the character bit maps */
         let charMaps = Array.new(96); // Enough space to fit all printable ASCII characters and black square
         let mapIndex = 0;
 
@@ -51,7 +59,7 @@ class Output {
         do Output.appendMap(0,0,3,6,12,24,12,6,3,0);        // >
         do Output.appendMap(30,51,51,24,12,12,0,12,12,0);   // ?
         do Output.appendMap(30,51,51,59,59,59,27,3,30,0);   // @
-        do Output.appendMap(0,0,0,0,0,0,0,0,0,0);           // A
+        do Output.appendMap(12,30,51,51,63,51,51,51,51,0);  // A
         do Output.appendMap(31,51,51,51,31,51,51,51,31,0);  // B
         do Output.appendMap(28,54,35,3,3,3,35,54,28,0);     // C
         do Output.appendMap(15,27,51,51,51,51,51,27,15,0);  // D
@@ -117,17 +125,123 @@ class Output {
         return;
     }
 
-    function void moveCursor(int i, int j) {}
+    /**
+     * Move the cursor to a specific row and column.
+     */
+    function void moveCursor(int row, int col) {
+        // Update cursor position
+        let cursorRow = row;
+        let cursorCol = col;
 
-    function void printChar(char c) {}
+        // Negative column should wrap back from the end of the previous row
+        if (cursorCol < 0) {
+            let cursorCol = 64 + cursorCol; // 64 = chars_per_row
+            let cursorRow = cursorRow - 1;
+        }
+        // Overflow column should move to the start of the next row
+        if (cursorCol > 63) { // 63 = max_col_index
+            let cursorCol = cursorCol - 64; // 64 = chars_per_row
+            let cursorRow = cursorRow + 1;
+        }
+        // Negative row should wrap around to the last row
+        if (cursorRow < 0) {
+            let cursorRow = 23 + cursorRow;
+        }
+        // Overflow row should move to the first row
+        if (cursorRow > 22) { // 22 = max_row_index
+            let cursorRow = cursorRow - 23; // 23 = max_rows
+        }
 
-    function void printString(String s) {}
+        return;
+    }
 
-    function void printInt(int i) {}
+    /**
+     * Print a single character to the screen and move the cursor forward by 1
+     */
+    function void printChar(char c) {
+        var Array map;
+        var int screenIndex, rowIndex, colAnd1, bitMask, screenValue;
 
-    function void println() {}
+        /** Revert to the black square if a character is not printable */
+        if ((c < 32) | (c > 126)) {
+            let c = 31;
+        }
 
-    function void backSpace() {}
+        /** Get the character bit map */
+        let map = charMaps[c - 31]; // map is zero-indexed with the black space as the first item (so ascii char 32 will be in position 1)
+
+        /** Establish base screen index */
+        let screenIndex = (cursorRow * 11 * 32) + (cursorCol / 2); // 11 = char_height, 32 = words_per_row, 2 = chars_per_word
+        
+        /** Pre-calculate col evaluation (0 if col is even and 1 if col is odd) */
+        let colAnd1 = cursorCol & 1;
+
+        /** Iterate through map to clear existing pixels, and print new ones */
+        let rowIndex = 0;
+        while (rowIndex < 11) { // 11 = char_height
+            let bitMask = map[rowIndex];
+            let screenValue = screen[screenIndex];
+            if (colAnd1 = 0) {
+                let screenValue = screenValue & -256 | bitMask; // "& -256" will clear the first 8 bits only
+            } else {
+                let screenValue = screenValue & 255 | (bitMask * 256); // "& 255" will clear the last 8 bits only, "* 256" = << 8 or "* 2 ^ 8"
+            }
+            let screen[screenIndex] = screenValue;
+
+            /** Iterate indexes */
+            let rowIndex = rowIndex + 1;
+            let screenIndex = screenIndex + 32; // 32 = words_per_row
+        }
+
+        /** Move cursor 1 to the right (use builtin function to handle wrapping) */
+        do Output.moveCursor(cursorRow, cursorCol + 1);
+
+        return;
+    }
+
+    /**
+     * Prints a string to the output one character at a time
+     */
+    function void printString(String s) {
+        var int i, len;
+        let i = 0;
+        let len = s.length();
+        while (i < len) {
+            /** Reuse printChar function */
+            do Output.printChar(s.charAt(i));
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /**
+     * Prints an integer to the screen
+     */
+    function void printInt(int i) {
+        var String intStr;
+        /** Convert the integer into a string */
+        let intStr = String.new(6); // 6 is the maximum integer digit length including the sign
+        do intStr.setInt(i);
+        /** Reuse printString function */
+        do Output.printString(intStr);
+        return;
+    }
+
+    /**
+     * Sets the cursor to the beginning of the next line
+     */
+    function void println() {
+        do Output.moveCursor(cursorRow + 1, 0);
+        return;
+    }
+
+    /**
+     * Moves the cursor back one column (calls moveCursor to handle text wrapping)
+     */
+    function void backSpace() {
+        do Output.moveCursor(cursorRow, cursorCol - 1);
+        return;
+    }
 
     /**
      * Appends a bit map to char maps static variable.
