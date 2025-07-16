@@ -26,7 +26,7 @@ class Screen {
         let screen = 16384;
 
         /** Initialize color */
-        let color = false;
+        let color = true;
 
         /** Create a precomputed array of bit mask values (same as Math.jack) */
         let i = 0;
