@@ -8,7 +8,6 @@
 
 class Math {
     static Array bits;
-    static int wordSize, maxDivY, sqrtConst;
 
     /**
      * Initialize the Math class' static values
@@ -16,26 +15,15 @@ class Math {
     function void init() {
         var int i, mask;
 
-        // HARDWARE WORD SIZE
-        let wordSize = 16;
-
         // Create a precomputed array of bit mask values
-        let bits = Array.new(wordSize);
+        let bits = Array.new(16);
         let mask = 1;
         let i = 0;
-        while (i < wordSize) {
+        while (i < 16) {
             let bits[i] = mask;
             let mask = mask + mask;
             let i = i + 1;
         }
-        
-        // Maximum value such that if y is doubled, it will overflow to negative
-        let maxDivY = bits[14];
-
-        // Square root constant value representing "n/2 - 1" where n is the word size
-        // This computation MUST occur last in the init function after all other static variables
-        // have been initialized to use the divide operator
-        let sqrtConst = (wordSize / 2) - 1;
 
         return;
     }
@@ -52,7 +40,7 @@ class Math {
         let sum = 0;
         let shiftX = x;
 
-        while (i < wordSize) {
+        while (i < 16) { // 16 is word size
             // Check if the i'th bit of y is equal to 1
             if (y & bits[i]) {
                 let sum = sum + shiftX;
@@ -100,7 +88,7 @@ class Math {
 
         // Only call recursive divide if y will not overflow when doubled
         // this avoids an unecessary function call
-        if (y < maxDivY) {
+        if (y < 16384) { // 16384 = n ^ 14
             let q = Math.divPos(x, y + y);
             let sum = q + q;
         } else {
@@ -121,7 +109,7 @@ class Math {
         var int y, j, yBit, doubleYBit;
         
         let y = 0;
-        let j = sqrtConst;
+        let j = 7; // (wordSize / 2) - 1 where words size - 16
 
         while (~(j < 0)) {
             let yBit = y + bits[j];

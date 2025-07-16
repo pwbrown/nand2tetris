@@ -14,7 +14,6 @@
 
 class Screen {
     static Array screen, bits;
-    static int width, height, wordSize, rowWords, maxX, maxY;
     static boolean color;
 
     /**
@@ -26,26 +25,14 @@ class Screen {
         /** Set the screen base address */
         let screen = 16384;
 
-        /** Set screen dimensions in pixels */
-        let width = 512;
-        let height = 256;
-
-        /** Set word size and row word count */
-        let wordSize = 16;
-        let rowWords = width / wordSize;
-
-        /** Maximum index values */
-        let maxX = width - 1;
-        let maxY = height - 1;
-
         /** Initialize color */
         let color = false;
 
         /** Create a precomputed array of bit mask values (same as Math.jack) */
         let i = 0;
-        let bits = Array.new(wordSize);
+        let bits = Array.new(16);
         let mask = 1;
-        while (i < wordSize) {
+        while (i < 16) {
             let bits[i] = mask;
             let mask = mask + mask;
             let i = i + 1;
@@ -57,10 +44,9 @@ class Screen {
      * Clear the entire screen
      */
     function void clearScreen() {
-        var int i, end;
+        var int i;
         let i = 0;
-        let end = (height * rowWords) + 1;
-        while (i < end) {
+        while (i < 8193) { // 8193 = height(256) * row_words(32) + 1
             let screen[i] = 0;
             let i = i + 1;
         }
@@ -80,12 +66,12 @@ class Screen {
      */
     function void drawPixel(int x, int y) {
         /** Ignore pixel overflow */
-        if ((x < 0) | (x > maxX) | (y < 0) | (y > maxY)) {
+        if ((x < 0) | (x > 511) | (y < 0) | (y > 255)) { // 511 = max_col_index, 255 = max_row_index
             return;
         }
         do Screen.drawIndexMask(
-            (rowWords * y) + (x / wordSize),
-            bits[x - (wordSize * (x / wordSize))] // bits[x % wordSize]
+            (y * 32) + (x / 16), // 32 = words_per_row, 16 = word_size
+            bits[x - (16 * (x / 16))] // 16 = word_size, index_expression = x % 16
         );
         return;
     }
@@ -141,7 +127,7 @@ class Screen {
         var int i, mask;
 
         /** Ignore out-of-bounds x coordinate */
-        if ((x < 0) | (x > maxX)) {
+        if ((x < 0) | (x > 511)) { // 511 = max_col_index
             return;
         }
 
@@ -156,19 +142,19 @@ class Screen {
         if (y1 < 0) {
             let y1 = 0;
         }
-        if (y2 > maxY) {
-            let y2 = maxY;
+        if (y2 > 255) { // 255 = max_row_index
+            let y2 = 255;
         }
 
         /** Set base index and static mask value */
-        let i = (x / wordSize) + (rowWords * y1);
-        let mask = bits[x - (wordSize * (x / wordSize))];
+        let i = (x / 16) + (y1 * 32); // 16 = word_size, 32 = words_per_row
+        let mask = bits[x - (16 * (x / 16))]; // 16 = words_size, index_expression = x % 16
 
         /** Start drawing from top to bottom */
         while (~(y1 > y2)) {
             do Screen.drawIndexMask(i, mask);
             let y1 = y1 + 1; // Increment to a row down
-            let i = i + rowWords; // Update the index to the next row
+            let i = i + 32; // Update the index to the next row. 32 = words_per_row
         }
         return;
     }
@@ -180,7 +166,7 @@ class Screen {
         var int curr, start, end, mask, currBit, endBit;
 
         /** Ignore overflow y coordinates */
-        if ((y < 0) | (y > maxY)) {
+        if ((y < 0) | (y > 255)) { // 255 = max_row_index
             return;
         }
 
@@ -195,14 +181,14 @@ class Screen {
         if (x1 < 0) {
             let x1 = 0;
         }
-        if (x2 > maxX) {
-            let x2 = maxX;
+        if (x2 > 511) { // 511 = max_col_index
+            let x2 = 511;
         }
 
         /** Set address indexes */
-        let curr = rowWords * y; // reuse curr to set base index
-        let start = curr + (x1 / wordSize);
-        let end = curr + (x2 / wordSize);
+        let curr = y * 32; // reuse curr to set base index. 32 = words_per_row
+        let start = curr + (x1 / 16); // 16 = word_size
+        let end = curr + (x2 / 16);
         let curr = start;
 
         while (~(curr > end)) {
@@ -214,12 +200,12 @@ class Screen {
                 let mask = 0;
                 /** Set current and end bit indexes */
                 let currBit = 0;
-                let endBit = wordSize - 1;
+                let endBit = 15; // 15 = word_size(16) - 1
                 if (curr = start) {
-                    let currBit = x1 - (wordSize * (x1 / wordSize)); // x1 % wordSize
+                    let currBit = x1 - (16 * (x1 / 16)); // x1 % word_size(16)
                 }
                 if (curr = end) {
-                    let endBit = x2 - (wordSize * (x2 / wordSize)); // x2 % wordSize
+                    let endBit = x2 - (16 * (x2 / 16)); // x2 % word_size(16)
                 }
                 /** Calculate bit mask as sum of all bit values between the start and end bit indexes */
                 while (~(currBit > endBit)) {
