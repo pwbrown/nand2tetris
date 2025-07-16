@@ -14,20 +14,15 @@ class Memory {
      * Initialize the Memory class' static values
      */
     function void init() {
-        var int dataMemorySize, heapBase, heapSize;
-        
         // Fill in base addresses for memory and heap (freeList)
         let ram = 0; // Sets the base address of the entire ram
-        let dataMemorySize = 16384; // Number of words addressable for data (first RAM16K chip before screen memory map)
-        let heapBase = 2048;
         
         // Set the current pointer for the freeList to the start of the heap
-        let freeList = heapBase;
+        let freeList = 2048;
         
         // Set the next segment and block sizes
-        let heapSize = dataMemorySize - heapBase;
         let freeList[0] = null;
-        let freeList[1] = heapSize - 2; // Block size excludes the overhead values
+        let freeList[1] = 14334; // (data_memory_size - heap_base - overhead) = (16384 - 2048 - 2)
 
         // Keeps track of the fragmented state of memory
         // Any call to deAlloc can put the memory into a "fragmented" state
