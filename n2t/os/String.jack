@@ -1,3 +1,11 @@
+/**
+ * Jack OS : String
+ * Author  : Philip Brown
+ * Source  : https://github.com/pwbrown/nand2tetris/n2t/os/String.jack
+ * 
+ * My implementation of the Jack OS String class for Nand2Tetris project 12
+ */
+
 class String {
     field Array chars;
     field int maxLen;
