@@ -116,6 +116,8 @@ class Memory {
                 }
             }
         }
+
+        return null;
     }
 
     /**
