@@ -159,17 +159,27 @@ class Output {
      * Print a single character to the screen and move the cursor forward by 1
      */
     function void printChar(char c) {
-        var Array map;
-        var int screenIndex, rowIndex, colAnd1, bitMask, screenValue;
-
         /** Revert to the black square if a character is not printable */
         if ((c < 32) | (c > 126)) {
             let c = 31;
         }
 
-        /** Get the character bit map */
-        let map = charMaps[c - 31]; // map is zero-indexed with the black space as the first item (so ascii char 32 will be in position 1)
+        /** Print the character bit map at the current cursor position */
+        do Output.printCharMap(charMaps[c - 31]); // map is zero-indexed with the black space as the first item (so ascii char 32 will be in position 1)
 
+        /** Move cursor 1 to the right (use builtin function to handle wrapping) */
+        do Output.moveCursor(cursorRow, cursorCol + 1);
+
+        return;
+    }
+
+    /**
+     * Prints a given character bit map to the current cursor position. This helper
+     * function allows any bit map to be printed without modifying the cursor position.
+     */
+    function void printCharMap(Array charMap) {
+        var int screenIndex, rowIndex, colAnd1, bitMask, screenValue;
+        
         /** Establish base screen index */
         let screenIndex = (cursorRow * 11 * 32) + (cursorCol / 2); // 11 = char_height, 32 = words_per_row, 2 = chars_per_word
         
@@ -179,7 +189,7 @@ class Output {
         /** Iterate through map to clear existing pixels, and print new ones */
         let rowIndex = 0;
         while (rowIndex < 11) { // 11 = char_height
-            let bitMask = map[rowIndex];
+            let bitMask = charMap[rowIndex];
             let screenValue = screen[screenIndex];
             if (colAnd1 = 0) {
                 let screenValue = screenValue & -256 | bitMask; // "& -256" will clear the first 8 bits only
@@ -192,10 +202,6 @@ class Output {
             let rowIndex = rowIndex + 1;
             let screenIndex = screenIndex + 32; // 32 = words_per_row
         }
-
-        /** Move cursor 1 to the right (use builtin function to handle wrapping) */
-        do Output.moveCursor(cursorRow, cursorCol + 1);
-
         return;
     }
 
@@ -239,7 +245,10 @@ class Output {
      * Moves the cursor back one column (calls moveCursor to handle text wrapping)
      */
     function void backSpace() {
+        /** Move cursor back */
         do Output.moveCursor(cursorRow, cursorCol - 1);
+        /** Clear the text at the current position */
+        do Output.printCharMap(charMaps[1]); // charMaps[1] corresponds to ASCII 32 (blank space)
         return;
     }
 
