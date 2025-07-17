@@ -27,14 +27,15 @@ class Sys {
      */
     function void halt() {
         while (true) {}
+        return;
     }
 
     /**
      * Prints an error code before halting execution
      */
     function void error(int errorCode) {
-        // TODO: print error code
-        
+        do Output.printString("ERR");
+        do Output.printInt(errorCode);
         do Sys.halt();
         return;
     }
@@ -42,5 +43,17 @@ class Sys {
     /**
      * Waits for a given amount of time before resuming execution
      */
-    function void wait(int duration) {}
+    function void wait(int duration) {
+        var int i, j;
+        let i = 0;
+        while (i < duration) {
+            let j = 0;
+            while (j < 400) { // Speed Factor setting of 400 is based on measuring a duration of 1 second with Online IDE running at max speed
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+
+        return;
+    }
 }
