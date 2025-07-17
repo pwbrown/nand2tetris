@@ -1,25 +1,202 @@
 class String {
-    constructor String new(int maxLength) {}
+    field Array chars;
+    field int maxLen;
+    field int curLen;
 
-    method void dispose() {}
+    /**
+     * Constructs a new string with a maximum length
+     */
+    constructor String new(int maxLength) {
+        if (maxLength < 1) {
+            let maxLength = 1;
+        }
+        let chars = Array.new(maxLength);
+        let maxLen = maxLength;
+        let curLen = 0;
+        return this;
+    }
 
-    method int length() {}
+    /**
+     * De-allocate the array associated with the string
+     */
+    method void dispose() {
+        do chars.dispose();
+        return;
+    }
 
-    method char charAt(int j) {}
+    /**
+     * Returns the current length of the string
+     */
+    method int length() {
+        return curLen;
+    }
 
-    method void setCharAt(int j, char c) {}
+    /**
+     * Returns the character at the given index of the string
+     */
+    method char charAt(int j) {
+        if ((j < 0) | (~(j < curLen))) {
+            return null;
+        }
+        return chars[j];
+    }
 
-    method String appendChar(char c) {}
+    /**
+     * Sets the character at a specific index and updates the length
+     * if required
+     */
+    method void setCharAt(int j, char c) {
+        /** Only set if the index is within bounds */
+        if ((j < 0) | (~(j < maxLen))) {
+            return;
+        }
+        let chars[j] = c;
+        /** Update the current length if necessary */
+        if (~(j < curLen)) {
+            let curLen = j + 1;
+        }
+        return;
+    }
 
-    method void eraseLastChar() {}
+    /**
+     * Append a character to the end of the string
+     */
+    method String appendChar(char c) {
+        /** Only append if the maxLength has not been reached */
+        if (curLen < maxLen) {
+            let chars[curLen] = c;
+            let curLen = curLen + 1;
+        }
+        return this;
+    }
 
-    method int intValue() {}
+    /**
+     * Remove the last character from the end of the string
+     */
+    method void eraseLastChar() {
+        if (curLen > 0) {
+            let curLen = curLen - 1;
+            let chars[curLen] = null;
+        }
+        return;
+    }
 
-    method void setInt(int j) {}
+    /**
+     * Returns the integer representation of a string until the first
+     * non-numeric character
+     */
+    method int intValue() {
+        var int i, strLen, result;
+        var char curChar;
+        var boolean loop, first, negative;
+        
+        let result = 0;
+        let negative = false;
+        let first = true;
 
-    function char backSpace() {}
+        /** Start iterating through the string */
+        let strLen = length();
+        let i = 0;
+        let loop = true;
+        while (loop & (i < strLen)) {
+            let curChar = chars[i];
+            /** Only look at non whitespace characters */
+            if ((~(curChar = 32)) & (~(curChar = 128))) { // 32 = ASCII Space, 128 = ASCII Newline
+                if (first & (curChar = 45)) { // 45 = ASCII hyphen/negative
+                    let negative = true;
+                } else {
+                    if ((curChar > 47) & (curChar < 58)) { // 48 = ASCII 0, 57 = ASCII 9
+                        let result = (result * 10) + (curChar - 48);
+                    } else {
+                        // Stop reading once non-numeric character is reached
+                        let loop = false;
+                    }
+                }
+                let first = false;
+            }
+            let i = i + 1;
+        }
+        /** Negate the result if needed */
+        if (negative) {
+            return -result;
+        }
+        return result;
+    }
 
-    function char doubleQuote() {}
+    /**
+     * Sets the current string to the character representation of
+     * the specified integer value
+     */
+    method void setInt(int j) {
+        var boolean negative;
+        var String posResult;
+        var int posLen, i;
+        let maxLen = 0;
+        /** Handle negative value */
+        let negative = false;
+        if (j < 0) {
+            let j = -j;
+            let negative = true;
+            let maxLen = 1;
+        }
+        /** Convert positive number */
+        let posResult = String.posInt2String(j);
+        /** Replace the existing chars array with a new array and update length values */
+        let posLen = posResult.length();
+        let maxLen = maxLen + posLen;
+        let curLen = 0;
+        do chars.dispose();
+        let chars = Array.new(maxLen);
+        /** Start to fill the chars array with the new string representation */
+        if (negative) {
+            do appendChar(45); // 45 = ASCII hyphen
+        }
+        /** Append chars from positive integer string */
+        let i = 0;
+        while (i < posLen) {
+            do appendChar(posResult.charAt(i));
+            let i = i + 1;
+        }
+        /** Dispose of the temp pos string */
+        do posResult.dispose();
+        return;
+    }
 
-    function char newLine() {}
+    /**
+     * Returns the ASCII character code for backspace
+     */
+    function char backSpace() {
+        return 129;
+    }
+
+    /**
+     * Returns the ASCII character code for double quotes "
+     */
+    function char doubleQuote() {
+        return 34;
+    }
+
+    /**
+     * Returns the ASCII character code for a newline
+     */
+    function char newLine() {
+        return 128;
+    }
+
+    /**
+     * Converts a positive integer into a string representation
+     */
+    function String posInt2String(int value) {
+        var String out;
+        var char c;
+        /** Get the character code of the last digit in the value */
+        let c = (value - (10 * (value / 10))) + 48; // (value % 10) + 48. 48 = ASCII 0
+        if (value < 10) {
+            let out = String.new(6); // 5 is maximum integer digit length with sign (hyphen)
+            return out.appendChar(c);
+        }
+        /** Recursively call function again */
+        let out = String.posInt2String(value / 10);
+        return out.appendChar(c);
+    }
 }
