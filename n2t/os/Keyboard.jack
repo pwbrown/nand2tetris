@@ -15,6 +15,7 @@ class Keyboard {
     function void init() {
         /** Set keyboard address */
         let kbd = 24576;
+        return;
     }
 
     /**
@@ -24,9 +25,108 @@ class Keyboard {
         return kbd[0];
     }
 
-    function char readChar() {}
+    /**
+     * Read a single character and return its value
+     */
+    function char readChar() {
+        var char key;
+        /** Wait until a key is pressed */
+        let key = Keyboard.keyPressed();
+        while(key = 0) {
+            let key = Keyboard.keyPressed();
+        }
+        /** Wait until the key is released */
+        while (~(Keyboard.keyPressed() = 0)) {}
+        /** Display newline */
+        if (key = String.newLine()) {
+            do Output.println();
+        }
+        /** Display backspace */
+        if (key = String.backSpace()) {
+            do Output.backSpace();
+        }
+        /** Display printable character */
+        if ((key > 31) & (key < 127)) {
+            do Output.printChar(key);
+        }
+        return key;
+    }
 
-    function String readLine(String message) {}
+    /**
+     * Read characters until the "enter" key is pressed and
+     * return the string
+     */
+    function String readLine(String message) {
+        var String readString;
+        var char keyChar;
+        var boolean loop;
+        var int curStrAlloc;
+        /** Generate a starter string to hold characters */
+        let curStrAlloc = 23; // 23 = chars_per_row
+        let readString = String.new(curStrAlloc);
+        /** Print the message to the screen first */
+        do Output.printString(message);
+        /** Read characters until newline is pressed */
+        let loop = true;
+        while (loop) {
+            let keyChar = Keyboard.readChar(); // read character also handles printing newline and backspace appropriately
+            /** Newline character indicates all done */
+            if (keyChar = String.newLine()) {
+                let loop = false;
+            } else {
+                /** Backspace character (only if string has content) */
+                if ((keyChar = String.backSpace()) & (readString.length() > 0)) {
+                    /** Remove last character from string */
+                    do readString.eraseLastChar();
+                }
+                /** Only append printable characters */
+                if ((keyChar > 31) & (keyChar < 127)) {
+                    do readString.appendChar(keyChar);
+                }
+                /** Resize the read string if necessary (add an additional 23 chars of space) */
+                if (readString.length() = curStrAlloc) {
+                    let curStrAlloc = curStrAlloc + 23;
+                    let readString = Keyboard.resizeString(readString, curStrAlloc);
+                }
+            }
+        }
+        /** Resize the final string and return */
+        return Keyboard.resizeString(readString, readString.length());
+    }
 
-    function int readInt(String message) {}
+    /**
+     * Reads a line from the screen and then returns the integer value of that string
+     */
+    function int readInt(String message) {
+        var String readString;
+        var int value;
+        /** Read string and convert it to an integer */
+        let readString = Keyboard.readLine(message);
+        let value = readString.intValue();
+        /** Dispose of the read string and return the int */
+        do readString.dispose();
+        return value;
+    }
+
+    /**
+     * Helper function to resize a string by generated a new
+     * string and copying all of the existing characters into
+     * the new string. Extra characters will be truncated, and the
+     * original string will be disposed of
+     */
+    function String resizeString(String original, int newSize) {
+        var String new;
+        var int i, origLength;
+        let new = String.new(newSize);
+        let origLength = original.length();
+        /** Copy original string into the new string */
+        let i = 0;
+        while ((i < newSize) & (i < origLength)) {
+            do new.appendChar(original.charAt(i));
+            let i = i + 1;
+        }
+        /** Dispose of the original string and return the new */
+        do original.dispose();
+        return new;
+    }
 }
