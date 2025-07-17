@@ -41,8 +41,8 @@ class Math {
         let shiftX = x;
 
         while (i < 16) { // 16 is word size
-            // Check if the i'th bit of y is equal to 1
-            if (y & bits[i]) {
+            // Check if the i'th bit of y is non zero
+            if (~((y & bits[i]) = 0)) {
                 let sum = sum + shiftX;
             }
             let shiftX = shiftX + shiftX; // left shift x value
