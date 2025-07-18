@@ -476,8 +476,8 @@ export class Writer extends BaseWriter {
             if (objSym) {
                 lines.push(`push ${objSym.kind} ${objSym.index}`);
             } else {
-                /** Just use the current class */    
-                lines.push('push this 0');
+                /** Just use the current class address */    
+                lines.push('push pointer 0');
             }
         }
         /** Compile remaining params */

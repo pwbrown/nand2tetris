@@ -22,8 +22,17 @@ const END_FRAME_REGISTER = 13;
 /** Register to use when storing the return address */
 const RETURN_ADDR_REGISTER = 14;
 
+/** Register to store the function address for the shared call function */
+const FUNC_ADDR_REGISTER = 13;
+
+/** Register to store the function args count for the shared call function */
+const FUNC_ARGS_REGISTER = 15;
+
 /** Label of the shared return function */
 const RETURN_LABEL = 'SharedReturn';
+
+/** Label of the shared "function caller" function */
+const FUNCTION_CALL_LABEL = 'SharedCaller';
 
 export interface WriterInput {
     name: string;
@@ -46,6 +55,7 @@ export class Writer extends BaseWriter {
     private annotate: boolean;
     private bootstrap: boolean;
     private writeReturn = false; // Indicates if the shared return block should be appended
+    private writeCaller = false; // Indicates if the shared caller block should be appended
     private inputContext = ''; // Holds the name of the current context
     private functionContext: string | null = null; // Holds the name of the function context
     private labelIndexes: { [label: string]: number } = {}; // Holds next index value for each unique label
@@ -70,6 +80,11 @@ export class Writer extends BaseWriter {
             for (const command of input.commands) {
                 this.writeCommand(command);
             }
+        }
+
+        /** Write the shared caller function */
+        if (this.writeCaller) {
+            this.writeSharedCaller();
         }
 
         /** Write the shared return function */
@@ -211,6 +226,44 @@ export class Writer extends BaseWriter {
             .custom('0;JMP')
         );
     }
+    
+    /** Write the shared caller function */
+    private writeSharedCaller() {
+        const funcAddr = `R${FUNC_ADDR_REGISTER}`;
+        const funcArgs = `R${FUNC_ARGS_REGISTER}`;
+        this.buildAndWrite((b) => b
+            .label(FUNCTION_CALL_LABEL)
+            /** Save caller frame (pushing the return address will be handled per function) */
+            .comment('push the D register to the stack. It contains the return address')
+            .pushD()
+            .comment('push LCL pointer to the stack')
+            .pushLbl('LCL')
+            .comment('push ARG pointer to the stack')
+            .pushLbl('ARG')
+            .comment('push THIS pointer to the stack')
+            .pushLbl('THIS')
+            .comment('push THIS pointer to the stack')
+            .pushLbl('THAT')
+            /** Reposition ARG/LCL */
+            .comment(`reposition ARG pointer to (SP - frame(5) - args(...))`)
+            .lblToD(funcArgs)
+            .custom(
+                `@5`,
+                'D=D+A',
+                '@SP',
+                'D=M-D',
+            )
+            .dToLbl('ARG')
+            .comment('reposition LCL pointer to the current SP')
+            .lblToD('SP')
+            .dToLbl('LCL')
+            /** Goto the function and set the return label */
+            .comment('recover callee function from temp register and goto')
+            .lblToA(funcAddr)
+            .custom('0;JMP')
+        );
+    }
+
 
     /** Write an aritchmetic command to the output file */
     private writeArithmeticCommand(command: ArithmeticCommand) {
@@ -460,38 +513,32 @@ export class Writer extends BaseWriter {
 
     /** Write a call command to the output file */
     private writeCallCommand(command: CallCommand) {
+        this.writeCaller = true;
+        const funcAddr = `R${FUNC_ADDR_REGISTER}`;
+        const funcArgs = `R${FUNC_ARGS_REGISTER}`;
         const returnLabel = this.indexLabel(`${command.name}$ret`);
         this.buildAndWrite((b) => b
-            /** Save caller frame */
-            .comment('push return address to the stack')
+            /** Save the callee address and the arguments count to temp registers */
+            .comment(`save callee address to temp register(${FUNC_ADDR_REGISTER})`)
+            .custom(
+                `@${command.name}`,
+                'D=A',
+            )
+            .dToLbl(funcAddr)
+            .comment(`save callee args number to temp register(${FUNC_ARGS_REGISTER})`)
+            .custom(
+                `@${command.args}`,
+                'D=A',
+            )
+            .dToLbl(funcArgs)
+            .comment('put the return address into the D register for the shared caller')
             .custom(
                 `@${returnLabel}`,
                 'D=A',
             )
-            .pushD()
-            .comment('push LCL pointer to the stack')
-            .pushLbl('LCL')
-            .comment('push ARG pointer to the stack')
-            .pushLbl('ARG')
-            .comment('push THIS pointer to the stack')
-            .pushLbl('THIS')
-            .comment('push THIS pointer to the stack')
-            .pushLbl('THAT')
-            /** Reposition ARG/LCL */
-            .comment(`reposition ARG pointer to (SP - frame(5) - args(${command.args}))`)
-            .custom(
-                `@${5 + command.args}`,
-                'D=A',
-                '@SP',
-                'D=M-D',
-            )
-            .dToLbl('ARG')
-            .comment('reposition LCL pointer to the current SP')
-            .lblToD('SP')
-            .dToLbl('LCL')
-            /** Goto the function and set the return label */
-            .comment('goto callee function and set the caller return label')
-            .goto(command.name)
+            .comment('goto the shared caller function')
+            .goto(FUNCTION_CALL_LABEL)
+            .comment('set the return label for the caller')
             .label(returnLabel)
         );
     }

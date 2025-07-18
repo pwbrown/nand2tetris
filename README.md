@@ -37,5 +37,18 @@ Hack Computer ROM Size is 32K (`32768` instructions). This is the goal, but ulti
 
 This represents the version of the compiler, translator, assembler, and Jack operating system as they were when I completed the course.
 
-Instruction Count: `43,543` (10,775 over max)
+Instruction Count: `43,543` (10,775 over max ❌)
+
+### Optimization #1 - Shared function caller (translator optimization)
+
+Much like how I use the same assembly code for all "return" operations, I would like to use the same assembly code for all function "call" operations.
+
+Implementation:
+- The caller is responsible for storing the callee's address and the number of arguments in temporary registers.
+- The caller is also responsible for putting the return address into the D register
+- The shared caller function is responsible for pushing the return address from the D register onto the stack
+- The shared caller function will perform the remaining actions to populate the caller's end frame on the stack
+- The shared caller will use the temporary registers to recover the callee's address and arguments
+
+Instruction Count: `32,165` (603 under max ✅)
 
