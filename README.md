@@ -16,6 +16,7 @@ As part of my self-imposed commitment to try and learn something new every year,
 - [Project 6](./project6/README.md) - Build an Assembler for the Hack Machine Language using a high-level programming language (TypeScript+NodeJS was my choice)
 
 ## Course 2 - "Hack Assembly to Jack and OS (Tetris)"
+
 - [Project 7](./project7/README.md) - Build the initial VM translator to support basic memory segment stack operations and arithmetic operations
 - [Project 8](./project8/README.md) - Finish building the VM translator with support for functions, gotos, conditionals, and multi-file support
 - [Project 9](./project9/README.md) - Build an application in the Jack programming language (My project: The sliding puzzle game)
@@ -25,3 +26,16 @@ As part of my self-imposed commitment to try and learn something new every year,
 ## N2T Command Line Utility
 
 While I was completing the course I started implementing the assembler and the translator as their own distinct programming projects. When I started module 9 which introduced the Jack programming language, I took a brief break from the course lessons and decided to rewrite the assembler and translator into a much more streamlined tool. This tool makes room for the Jack compiler and serves as a single command that can take Jack code all the way down to Hack binary (if desired). [Read more...](./n2t/README.md)
+
+## Post Course Optimization
+
+During the course, all of the projects were completed on "virtual" hardware or VM simulators that did not enforce space constraints. This meant that even if the total instructions in the program exceeded the hack computer's instruction memory (ROM) it would still work just fine. This is not good enough for me, so I took an extra journey after completing both courses to try and optimize all of the code I had written to make the benchmark game "Pong" from project 11 fit into the hack computer. And I wanted it to be done using MY implementation of the Jack operating system since it includes extra redundancy features that will cause it to be larger. This means it's an extra challenge.
+
+Hack Computer ROM Size is 32K (`32768` instructions). This is the goal, but ultimately I would like to condense it as much as possible.
+
+### Original "Unoptimized" Implementation
+
+This represents the version of the compiler, translator, assembler, and Jack operating system as they were when I completed the course.
+
+Instruction Count: `43,543` (10,775 over max)
+
