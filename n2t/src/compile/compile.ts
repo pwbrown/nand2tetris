@@ -13,12 +13,7 @@ import { toXMLString } from './xml';
 import { Writer } from './writer';
 
 /** Individually read and parse all Jack files and generate a VM file and token and object XML files for each Jack file */
-export const compile = async (references: FileReferences, options?: Options) => {
-    /** Handle options */
-    const includeProps = !!options?.['source-map'];
-    const includeXml = !!options?.['xml'];
-    const annotate = !!options?.['annotate'];
-
+export const compile = async (references: FileReferences, options: Options) => {
     /** Read and compile each Jack file */
     for (const ref of references.inputFiles) {
         /** Read file */
@@ -39,24 +34,28 @@ export const compile = async (references: FileReferences, options?: Options) => 
 
         if (programClass) {
             /** Create the writer and write all of the VM code */
-            const outputFile = join(ref.dir, `${ref.name}.vm`);
-            const writer = new Writer(programClass, outputFile, annotate);
+            const outputFile = join(references.outDir || ref.dir, `${ref.name}.vm`);
+            const writer = new Writer(programClass, outputFile, options.annotate);
             await writer.writeVM();
-            console.error('Finished parsing jack file:');
-            console.error(`  -- Input   : ${ref.path}`);
-            console.error(`  -- Outputs : ${outputFile}`);
+            if (options.verbose) {
+                console.error('Finished compiling jack file:');
+                console.error(`  -- Input   : ${ref.path}`);
+                console.error(`  -- Outputs : ${outputFile}`);
+            }
             /** Optionally build original XML syntax analyzer output */
-            if (includeXml) {
+            if (options.xml) {
                 /** Build and write XML for all tokens */
-                const tokenXMLOut = join(ref.dir, `${ref.name}T.xml`);
-                const tokenXMLString = toXMLString(parser.tokensToXMLNode(), { includeProps });
+                const tokenXMLOut = join(references.outDir || ref.dir, `${ref.name}T.xml`);
+                const tokenXMLString = toXMLString(parser.tokensToXMLNode(), { includeProps: options.sourceMap });
                 await writeFile(tokenXMLOut, tokenXMLString, { encoding: 'utf-8' });
                 /** Build and write XML for the parse tree */
-                const programXMLOut = join(ref.dir, `${ref.name}.xml`);
-                const programXMLString = toXMLString(programClass.toXMLNode(), { includeProps });
+                const programXMLOut = join(references.outDir || ref.dir, `${ref.name}.xml`);
+                const programXMLString = toXMLString(programClass.toXMLNode(), { includeProps: options.sourceMap });
                 await writeFile(programXMLOut, programXMLString, { encoding: 'utf-8' });
-                console.error(`               - ${tokenXMLOut}`);
-                console.error(`               - ${programXMLOut}`);;
+                if (options.verbose) {
+                    console.error(`               - ${tokenXMLOut}`);
+                    console.error(`               - ${programXMLOut}`);;
+                }
             }
         }
     }

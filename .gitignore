@@ -155,6 +155,9 @@ n2t/os/**/*.vm
 n2t/os/**/*.asm
 n2t/os/**/*.hack
 bin/
+temp/
+out/
+build/
 *.zip
 *.DS_STORE
 *.txt

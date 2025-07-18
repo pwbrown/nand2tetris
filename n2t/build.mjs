@@ -16,6 +16,9 @@ await esbuild.build({
  * Written in TypeScript.
  * Using NodeJS v16 (to avoid compatability issues with the Coursera Nand2Tetris auto-grading system)
  * Bundled and compiled using ESBuild.
+ * 
+ * OSS Dependencies Bundled:
+ *   - Commander.js (https://www.npmjs.com/package/commander): Streamline command line processing
  */`,
     },
 });

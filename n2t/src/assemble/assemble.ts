@@ -8,11 +8,11 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Parser } from './parser';
 import { Writer } from './writer';
-import { FileReferences } from '../utils';
+import { FileReferences, Options } from '../utils';
 import { Lexer } from '../shared/lexer';
 
 /** Individually parses and assembles all hack .asm files into .hack binary files */
-export const assemble = async (references: FileReferences) => {
+export const assemble = async (references: FileReferences, options: Options) => {
     for (const ref of references.inputFiles) {
         /** Read file */
         const contents = await readFile(ref.path, { encoding: 'utf-8' });
@@ -29,13 +29,15 @@ export const assemble = async (references: FileReferences) => {
             });
         }
         /** Build the symbol map and write to the output file */
-        const outputFile = join(ref.dir, `${ref.name}.hack`);
+        const outputFile = join(references.outDir || ref.dir, `${references.name || ref.name}.hack`);
         const writer = new Writer(instructions, outputFile);
         writer.buildSymbolMap();
         await writer.writeBinary();
 
-        console.error('Finished assembling hack assembly file:');
-        console.error(`  -- Input  : ${ref.path}`);
-        console.error(`  -- Output : ${outputFile}`);
+        if (options.verbose) {
+            console.error('Finished assembling hack assembly file:');
+            console.error(`  -- Input  : ${ref.path}`);
+            console.error(`  -- Output : ${outputFile}`);
+        }
     }
 }

@@ -5,48 +5,31 @@
  */
 
 import { dirname, basename, extname, resolve, join } from 'node:path';
-import { stat, readdir } from 'node:fs/promises';
+import { stat, readdir, mkdir } from 'node:fs/promises';
 
-/** Command line arguments in the order they appear */
-type Args = string[];
-
-/** Command line options map */
+/** Shared options definition */
 export interface Options {
-    [opt: string]: boolean;
-}
-
-/** Regular expression to match command line option (format: '--OPT_NAME' or '-abc') */
-const OPT_REGEX = /^--?[a-z][a-z-]+$/i;
-
-/** Parse the process arguments and return arguments and options map */
-export const parseOptions = (processArgs: string[]): [args: Args, options: Options] => {
-    /** Parse arguments supplied to the program */
-    const args: Args = processArgs.slice(2).filter((arg) => !OPT_REGEX.test(arg));
-
-    /** Parse command line options (format = '--OPT_NAME') */
-    const options = processArgs
-        .filter((arg) => OPT_REGEX.test(arg))
-        .reduce<Options>((all, opt) => {
-            if (opt.startsWith('--')) {
-                all[opt.replace(/^--/, '').toLowerCase()] = true;
-            } else {
-                opt.replace(/^-/, '')
-                    .toLowerCase()
-                    .split('')
-                    .forEach((char) => {
-                        all[char] = true;
-                    });
-                
-            }
-            return all;
-        }, {});
-
-    return [args, options];
+    /** Print additional information to the console */
+    verbose: boolean;
+    /** Commments should be added to compiled/translated output */
+    annotate: boolean;
+    /** Jack OS compiled code should be copied to the compile destination */
+    copyOs: boolean;
+    /** XML files should be generated for compiler tokenizer and parse tree representations  */
+    xml: boolean;
+    /** XML files should include original source line/column numbers as XML properties */
+    sourceMap: boolean;
+    /** Passthrough parameter for file references */
+    name?: string;
 }
 
 export interface FileReferences {
-  /** Path to the input directory or null if a single file was provided */
+  /** Path to the output directory (if it was a directory) */
   dir: string | null;
+  /** Output directory */
+  outDir: string | null;
+  /** Preferred name for a singular the output file */
+  name: string | null;
   /** Designated file extension (determines the starting n2t action) */
   ext: string | null;
   /** One or more input files */
@@ -65,12 +48,21 @@ export interface FileReferences {
 /** Priority of each extension */
 const EXT_PRIORITY = ['.jack', '.vm', '.asm'];
 
+export interface GetFileReferencesOptions {
+  input: string;
+  output?: string;
+  extension?: string;
+  name?: string;
+}
+
 /** Parses the input argument and returns one or more file references */
-export const getFileReferences = async (
-  inputArg: string,
-  requestedExtension?: string,
-): Promise<FileReferences> => {
-  const inputPath = resolve(inputArg);
+export const getFileReferences = async (options: GetFileReferencesOptions): Promise<FileReferences> => {
+  const inputPath = resolve(options.input);
+  const outputPath = options.output ? resolve(options.output) : options.output;
+  /** Ensure output path is created before it is written to in the future */
+  if (outputPath) {
+    await mkdir(outputPath, { recursive: true });
+  }
   const inputStat = await stat(inputPath);
   let lowestExtInd = Infinity;
   /** Handle directory of files */
@@ -95,7 +87,10 @@ export const getFileReferences = async (
     /** Attempt to recursively retrieve nested files */
     const innerDirs = contents.filter((entry) => entry.isDirectory());
     for (const innerDir of innerDirs) {
-        const references = await getFileReferences(join(inputPath, innerDir.name));
+        const references = await getFileReferences({
+          ...options,
+          input: join(inputPath, innerDir.name),
+        });
         const dirExtInd = references.ext ? EXT_PRIORITY.indexOf(references.ext) : -1;
         if (dirExtInd !== -1 && dirExtInd < lowestExtInd) {
             lowestExtInd = dirExtInd;
@@ -103,11 +98,13 @@ export const getFileReferences = async (
         allFiles.push(...references.inputFiles);
     }
 
-    const ext = requestedExtension || EXT_PRIORITY[lowestExtInd] || null;
+    const ext = options.extension || EXT_PRIORITY[lowestExtInd] || null;
 
     /** Get files filtered by extension */
     return {
       dir: inputPath,
+      outDir: outputPath || null,
+      name: options.name || null,
       ext,
       inputFiles: allFiles.filter((val) => ext && val.ext === ext),
     };
@@ -116,17 +113,21 @@ export const getFileReferences = async (
   else if (inputStat.isFile()) {
     const dir = dirname(inputPath);
     const ext: string | null = extname(inputPath);
-    const name = basename(inputPath, ext);
+    const name = options.name || basename(inputPath, ext);
     const extInd = EXT_PRIORITY.indexOf(ext);
-    if (extInd === -1 || (requestedExtension && ext !== requestedExtension)) {
+    if (extInd === -1 || (options.extension && ext !== options.extension)) {
         return {
             dir: null,
+            outDir: null,
+            name: null,
             ext: null,
             inputFiles: [],
         };
     } else {
         return {
           dir: null,
+          outDir: outputPath || null,
+          name: options.name || null,
           ext,
           inputFiles: [{
             path: inputPath,

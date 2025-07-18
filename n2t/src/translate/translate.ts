@@ -12,7 +12,7 @@ import { FileReferences, Options } from '../utils';
 import { Lexer } from '../shared/lexer';
 
 /** Individually read and parse all VM files and generate a single combined assembly file */
-export const translate = async (references: FileReferences, options?: Options) => {
+export const translate = async (references: FileReferences, options: Options) => {
     /** Keep track of all parsed inputs */
     const inputs: WriterInput[] = [];
     
@@ -43,9 +43,16 @@ export const translate = async (references: FileReferences, options?: Options) =
     const inputPath = references.dir
         ? references.dir
         : references.inputFiles[0].path;
-    const outputFile = references.dir
-        ? join(references.dir, `${basename(references.dir)}.asm`)
-        : join(references.inputFiles[0].dir, `${references.inputFiles[0].name}.asm`);
+    const outputName = (
+        references.name ? references.name :
+        references.dir ? basename(references.dir) :
+        references.inputFiles[0].name
+    );
+    const outputFile = (
+        references.outDir ? join(references.outDir, `${outputName}.asm`) :
+        references.dir ? join(references.dir, `${outputName}.asm`) :
+        join(references.inputFiles[0].dir, `${outputName}.asm`)
+    );
     const writer = new Writer({
         outputFile,
         inputs,
@@ -54,7 +61,9 @@ export const translate = async (references: FileReferences, options?: Options) =
     });
     await writer.writeAssembly();
 
-    console.error('Finished building hack assembly from VM code:');
-    console.error(`  -- Input  : ${inputPath}`);
-    console.error(`  -- Output : ${outputFile}`);
+    if (options.verbose) {
+        console.error('Finished building hack assembly from VM code:');
+        console.error(`  -- Input  : ${inputPath}`);
+        console.error(`  -- Output : ${outputFile}`);
+    }
 }
