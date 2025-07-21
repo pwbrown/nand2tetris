@@ -33,17 +33,20 @@ During the course, all of the projects were completed on "virtual" hardware or V
 
 Hack Computer ROM Size is 32K (`32768` instructions). This is the goal, but ultimately I would like to condense it as much as possible.
 
-### Original "Unoptimized" Implementation
+### Summary of ALL optimizations in the order they were made
 
-This represents the version of the compiler, translator, assembler, and Jack operating system as they were when I completed the course.
+| Optimization                                                | Pong Inst. Count | Removed Inst. | Fits in ROM        |
+| ----------------------------------------------------------- | ---------------- | ------------- | ------------------ |
+| Unoptimized                                                 | `43,543`         | 'N/A'         | ❌ (`10,775` over) |
+| [Shared Function Caller](#shared-function-caller)           | `32,165`         | `11,378`      | ✅ (`603` under)   |
+| [Arithmetic Op Complexity](#arithmetic-operator-complexity) | `29,021`         | `3,144`       | ✅ (`3,747` under) |
 
-Instruction Count: `43,543` (10,775 over max ❌)
-
-### Optimization #1 - Shared function caller (translator optimization)
+### Shared function caller
 
 Much like how I use the same assembly code for all "return" operations, I would like to use the same assembly code for all function "call" operations.
 
 Implementation:
+
 - The caller is responsible for storing the callee's address and the number of arguments in temporary registers.
 - The caller is also responsible for putting the return address into the D register
 - The shared caller function is responsible for pushing the return address from the D register onto the stack
@@ -52,3 +55,14 @@ Implementation:
 
 Instruction Count: `32,165` (603 under max ✅)
 
+### Arithmetic Operator Complexity
+
+Most of the stack operations I developed were based on the pseudocode provided by the course which is naturally verbose to make it easier to understand. Some of the individual steps in the pseudocode can be easily removed.
+
+| Operator(s)         | Assembly Before                                                                                                                                                                                                                | Assembly After                                                                                                                                                                    | Op Inst. Removed | Pong Inst. Removed |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------ |
+| `add\|sub\|and\|or` | <code>@SP<br>AM=M-1<br>D=M<br>@SP<br>AM=M-1<br>D={D+M,M-D,D&M,M\|D}<br>@SP<br>A=M<br>M=D<br>@SP<br>M=M+1</code>                                                                                                                | <code>@SP<br>AM=M-1<br>D=M<br>A=A-1<br>M={D+M,M-D,D&M,M\|D}</code>                                                                                                                | `6`              | `1,362`            |
+| `neg\|not`          | <code>@SP<br>AM=M-1<br>D={-M,!M}<br>@SP<br>A=M<br>M=D<br>@SP<br>M=M+1</code>                                                                                                                                                   | <code>@SP<br>A=M-1<br>M={-M,!M}</code>                                                                                                                                            | `5`              | `930`              |
+| `lt\|eq\|gt`        | <code>@SP<br>AM=M-1<br>D=M<br>@SP<br>AM=M-1<br>D=M-D<br>@TRUE_LABEL<br>D;{JLT,JEQ,JGT}<br>@SP<br>A=M<br>M=0<br>@SP<br>M=M+1<br>@END_LABEL<br>0;JMP<br>(TRUE_LABEL)<br>@SP<br>A=M<br>M=-1<br>@SP<br>M=M+1<br>(END_LABEL)</code> | <code>@SP<br>AM=M-1<br>D=M<br>A=A-1<br>D=M-D<br>@TRUE_LABEL<br>D;{JLT,JEQ,JGT}<br>D=0<br>@END_LABEL<br>0;JMP<br>(TRUE_LABEL)<br>D=-1<br>(END_LABEL)<br>@SP<br>A=M-1<br>M=D</code> | `6`              | `852`              |
+
+Instruction Count: `29,021` (3,747 under max ✅)

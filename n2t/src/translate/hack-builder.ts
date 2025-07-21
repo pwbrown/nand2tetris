@@ -176,22 +176,6 @@ export class HackBuilder {
             .incSP();
     }
 
-    /** Push a boolean value onto the stack */
-    public pushBool(value: boolean) {
-        return this
-            .lblToA('SP')
-            .custom(`M=${value ? -1 : 0}`)
-            .incSP();
-    }
-
-    /** Pops 2 values off the stack and stores their difference in the D register */
-    public popDiffToD() {
-        return this
-            .popD()
-            .decSP()
-            .custom('D=M-D');
-    }
-
     /** Goto a label */
     public goto(label: string) {
         return this.custom(
