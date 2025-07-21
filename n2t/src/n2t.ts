@@ -80,6 +80,8 @@ const assembleAction: ActionHandler = async (source, destination, options) => {
 
 /** Action to fully compile, translate, and assemble Jack code into Hack binary instructions */
 const hackAction: ActionHandler = async (source, destination, options) => {
+    /** Enable copy OS feature by default */
+    options.copyOs = true;
     /** Step 1: Compile source files and optionally the OS */
     const references = await compileAction(source, destination, options);
     /** Step 2: Translate source files (prioritize original destination path if provided) */
