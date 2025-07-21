@@ -268,88 +268,75 @@ export class Writer extends BaseWriter {
     /** Write an aritchmetic command to the output file */
     private writeArithmeticCommand(command: ArithmeticCommand) {
         const operator = command.operator;
-        const popRh = 'pop right hand (rh) operand';
-        const popLh = 'pop left hand (lh) operand';
-        const popOp = 'pop the operand';
-        const pushRes = 'push result to the stack';
-        
+
         if (operator === 'add') {
             this.buildAndWrite((b) => b
-                .comment(popRh)
                 .popD()
-                .comment(popLh)
-                .decSP()
-                .comment('calculate (rh + lh)')
-                .custom('D=D+M')
-                .comment(pushRes)
-                .pushD()
+                .custom(
+                    'A=A-1',
+                    'M=D+M',
+                )
             );
         } else if (operator === 'sub') {
             this.buildAndWrite((b) => b
-                .comment('pop 2 values from the stack and put difference in D register')
-                .popDiffToD()
-                .comment(pushRes)
-                .pushD()
+                .popD()
+                .custom(
+                    'A=A-1',
+                    'M=M-D',
+                )
             );
         } else if (operator === 'neg') {
             this.buildAndWrite((b) => b
-                .comment(popOp)
-                .decSP()
-                .comment('negate the operand')
-                .custom('D=-M')
-                .comment(pushRes)
-                .pushD()
+                .lblToA('SP', -1)
+                .custom('M=-M')
             );
         } else if (operator === 'eq' || operator === 'gt' || operator === 'lt') {
             const trueLabel = this.indexLabel(this.contextLabel(operator));
             const endLabel = this.indexLabel(this.contextLabel(`end_${operator}`));
             this.buildAndWrite((b) => b
-                .comment('pop the top 2 stack values and store the difference in the D register')
-                .popDiffToD()
+                .comment('dec SP then store ((SP-1) - SP) in D register')
+                .popD()
+                .custom(
+                    'A=A-1',
+                    'D=M-D',
+                )
                 .comment(`if (D ${operator} 0) goto ${trueLabel}`)
                 .custom(
                     `@${trueLabel}`,
                     `D;J${operator.toUpperCase()}`,
                 )
-                .comment(`else push false and goto ${endLabel}`)
-                .pushBool(false)
+                .comment(`else D=false and goto ${endLabel}`)
+                .custom('D=0')
                 .goto(endLabel)
-                .comment('push true')
+                .comment('D=true')
                 .label(trueLabel)
-                .pushBool(true)
+                .custom('D=-1')
                 .comment('end of condition')
                 .label(endLabel)
+                .comment('(SP-1)=D')
+                .lblToA('SP', -1)
+                .custom('M=D')
             );
         } else if (operator === 'and') {
             this.buildAndWrite((b) => b
-                .comment(popRh)
                 .popD()
-                .comment(popLh)
-                .decSP()
-                .comment('calculate (rh & lh)')
-                .custom('D=D&M')
-                .comment(pushRes)
-                .pushD()
+                .custom(
+                    'A=A-1',
+                    'M=D&M',
+                )
             );
         } else if (operator === 'or') {
             this.buildAndWrite((b) => b
-                .comment(popRh)
                 .popD()
-                .comment(popLh)
-                .decSP()
-                .comment('calculate (rh | lh)')
-                .custom('D=D|M')
-                .comment(pushRes)
-                .pushD()
+                .custom(
+                    'A=A-1',
+                    'M=D|M',
+                )
             );
         } else if (operator === 'not') {
             this.buildAndWrite((b) => b
-                .comment(popOp)
-                .decSP()
-                .comment('not (!) the operand')
-                .custom('D=!M')
-                .comment(pushRes)
-                .pushD()
+                .lblToA('SP', -1)
+                .custom('M=!M')
             );
         } else {
             this.throwError(`Unhandled arithmetic operator: ${operator}`, command.line);

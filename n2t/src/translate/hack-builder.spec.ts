@@ -349,40 +349,6 @@ describe('Translate - Hack Builder', () => {
         );
     });
 
-    it('should push a boolean value to the stack', () => {
-        const tests: [boolean, number][] = [
-            [true, -1],
-            [false, 0],
-        ];
-
-        for (const [value, int] of tests) {
-            expectAssembly(
-                build().pushBool(value),
-                [
-                    '@SP',
-                    'A=M',
-                    `M=${int}`,
-                    '@SP',
-                    'M=M+1',
-                ],
-            );
-        }
-    });
-
-    it('should pop 2 values off the stack and store their difference in the D register', () => {
-        expectAssembly(
-            build().popDiffToD(),
-            [
-                '@SP',
-                'AM=M-1',
-                'D=M',
-                '@SP',
-                'AM=M-1',
-                'D=M-D',
-            ],
-        );
-    });
-
     it('should perform an unconditional goto', () => {
         expectAssembly(
             build().goto('END'),
