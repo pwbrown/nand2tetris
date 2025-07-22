@@ -40,6 +40,9 @@ Hack Computer ROM Size is 32K (`32768` instructions). This is the goal, but ulti
 | Unoptimized                                                 | `43,543`         | 'N/A'         | ❌ (`10,775` over) |
 | [Shared Function Caller](#shared-function-caller)           | `32,165`         | `11,378`      | ✅ (`603` under)   |
 | [Arithmetic Op Complexity](#arithmetic-operator-complexity) | `29,021`         | `3,144`       | ✅ (`3,747` under) |
+| Simplify Bootstrap                                          | `29,015`         | `6`           | ✅ (`3,753` under) |
+| [Tune the Pop Operation](#tune-the-pop-operation)           | `28,730`         | `285`         | ✅ (`4,038` under) |
+| [Nitpicky Assembly Tweaks](#nitpicky-assembly-tweaks)       | `26,254`         | `2,476`       | ✅ (`6,514` under) |
 
 ### Shared function caller
 
@@ -53,8 +56,6 @@ Implementation:
 - The shared caller function will perform the remaining actions to populate the caller's end frame on the stack
 - The shared caller will use the temporary registers to recover the callee's address and arguments
 
-Instruction Count: `32,165` (603 under max ✅)
-
 ### Arithmetic Operator Complexity
 
 Most of the stack operations I developed were based on the pseudocode provided by the course which is naturally verbose to make it easier to understand. Some of the individual steps in the pseudocode can be easily removed.
@@ -65,4 +66,22 @@ Most of the stack operations I developed were based on the pseudocode provided b
 | `neg\|not`          | @SP<br>AM=M-1<br>D={-M,!M}<br>@SP<br>A=M<br>M=D<br>@SP<br>M=M+1                                                                                                                                                   | @SP<br>A=M-1<br>M={-M,!M}                                                                                                                                            | `5`              | `930`              |
 | `lt\|eq\|gt`        | @SP<br>AM=M-1<br>D=M<br>@SP<br>AM=M-1<br>D=M-D<br>@TRUE_LABEL<br>D;{JLT,JEQ,JGT}<br>@SP<br>A=M<br>M=0<br>@SP<br>M=M+1<br>@END_LABEL<br>0;JMP<br>(TRUE_LABEL)<br>@SP<br>A=M<br>M=-1<br>@SP<br>M=M+1<br>(END_LABEL) | @SP<br>AM=M-1<br>D=M<br>A=A-1<br>D=M-D<br>@TRUE_LABEL<br>D;{JLT,JEQ,JGT}<br>D=0<br>@END_LABEL<br>0;JMP<br>(TRUE_LABEL)<br>D=-1<br>(END_LABEL)<br>@SP<br>A=M-1<br>M=D | `6`              | `852`              |
 
-Instruction Count: `29,021` (3,747 under max ✅)
+### Tune the Pop Operation
+
+This was a setting I added based on an implementation I saw from another person who completed the course and it had to do with replacing the use of a temporary register for pop operations with a series of `A=A(+|-)1` calls. There is a threshold at which the number of these increment/decrement calls to the A register consumes less instructions than with the use of a temporary register. I just needed time to test where the threshold was.
+
+As it can be seen here, any pop command with a threshold of 7 or lower will produce less instructions than with the use of a temporary register
+
+| VM Command    | Assembly with Temp Register (R13)                                                              | Assembly without Temp Register                                                                                                                                           |
+| ------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pop local 7` | @7<br>D=A<br>@LCL<br>A=D+M<br>D=A<br>@R13<br>M=D<br>@SP<br>AM=M-1<br>D=M<br>@R13<br>A=M<br>M=D | @SP<br>AM=M-1<br>D=M<br>@LCL<br>A=M+1 // LCL(1)<br>A=A+1 // LCL(2)<br>A=A+1 // LCL(3)<br>A=A+1 // LCL(4)<br>A=A+1 // LCL(5)<br>A=A+1 // LCL(6)<br>A=A+1 // LCL(7)<br>M=D |
+
+### Nitpicky Assembly Tweaks
+
+| Explanation                                | Assembly Before                                  | Assembly After                              | Pong Inst. Before | Pong Inst. After |
+| ------------------------------------------ | ------------------------------------------------ | ------------------------------------------- | ----------------- | ---------------- |
+| Push D Register Value onto Stack           | @SP<br>A=M<br>M=D<br>@SP<br>M=M+1                | @SP<br>M=M+1<br>A=M-1<br>M=D                | `28,730`          | `27,815` (-915)  |
+| Push -1, 0, or 1 onto Stack                | @SP<br>A=M<br>M={-1,0,1}<br>@SP<br>M=M+1         | @SP <br>M=M+1<br>A=M-1<br>M={-1,0,1}        | `27,815`          | `27,305` (-510)  |
+| Push int onto Stack (not -1, 0, or 1)      | @num<br>D=A<br>@SP<br>A=M<br>M=D<br>@SP<br>M=M+1 | @num<br>D=A<br>@SP<br>M=M+1<br>A=M-1<br>M=D | `27,305`          | `26,396` (-909)  |
+| Push int 2 or -2 onto Stack (special case) | @2<br>D=A<br>@SP<br>M=M+1<br>A=M-1<br>M=D        | @SP<br>M=M+1<br>A=M-1<br>M=1<br>M=M+1       | `26,396`          | `26,379` (-17)   |
+| Setup Function Local Variables | D=0<br>// for # locals<br>@SP<br>M=M+1<br>A=M-1<br>M=D<br>// endfor | @{# locals}<br>D=A<br>@SP<br>M=D+M<br>// for # locals<br>A={i is 0 ? M : A}-1<br>M=0<br>// endfor | `26,379` | `26,254` (-125) |

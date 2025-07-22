@@ -36,11 +36,27 @@ export class HackBuilder {
     }
 
     /** Increment the Stack Pointer */
-    public incSP() {
-        return this.custom(
-            '@SP',
-            'M=M+1',
-        );
+    public incSP(num = 1) {
+        if (num < 1) {
+            throw new Error('incSP must receive a positive integer greater than 0');
+        }
+        if (num <= 2) {
+            const b = this.custom(
+                '@SP',
+                'M=M+1',
+            );
+            if (num > 1) {
+                b.custom('M=M+1');
+            }
+            return b;
+        } else {
+            return this.custom(
+                `@${Math.floor(num)}`,
+                'D=A',
+                '@SP',
+                'M=D+M',
+            );
+        }
     }
 
     /** Decrement the Stack Pointer and set A register to new stack pointer */
@@ -113,9 +129,11 @@ export class HackBuilder {
     /** Push the value in the D register onto the stack */
     public pushD() {
         return this
-            .lblToA('SP')
-            .custom('M=D')
-            .incSP();
+            .incSP()
+            .custom(
+                'A=M-1',
+                'M=D',
+            );
     }
 
     /** Pop a value off the stack and put it in the D register */
@@ -132,48 +150,39 @@ export class HackBuilder {
             .pushD();
     }
 
-    /** Set a label value to a constant integer */
-    public intToLbl(value: number, label: string) {
-        if (value === 0 || value === 1 || value === -1) {
-            return this.custom(
-                `@${label}`,
-                `M=${value}`
-            );
-        } else {
-            const isNeg = value < 0;
-            const posVal = Math.abs(value);
-            return this
-                .custom(
-                    `@${posVal}`,
-                    `D=${isNeg ? '-' : ''}A`,
-                )
-                .dToLbl(label);
-        }
-    }
-
-    /** Set a dereferenced pointer value to a constant integer */
-    public intToPtr(value: number, label: string) {
-        if (value === 0 || value === 1 || value === -1) {
-            return this
-                .lblToA(label)
-                .custom(`M=${value}`);
-        } else {
-            const isNeg = value < 0;
-            const posVal = Math.abs(value);
-            return this
-                .custom(
-                    `@${posVal}`,
-                    `D=${isNeg ? '-' : ''}A`,
-                )
-                .dToPtr(label);
-        }
-    }
-
     /** Push a constant value onto the stack (either integer or boolean) */
     public pushInt(value: number) {
-        return this
-            .intToPtr(value, 'SP')
-            .incSP();
+        if (value === 0 || value === 1 || value === -1) {
+            return this
+                .incSP()
+                .custom(
+                    'A=M-1',
+                    `M=${value}`,
+                );
+        } else {
+            const isNeg = value < 0;
+            const posVal = Math.abs(value);
+            if (posVal === 2) {
+                return this
+                    .incSP()
+                    .custom(
+                        'A=M-1',
+                        `M=${isNeg ? '-' : ''}1`,
+                        `M=M${isNeg ? '-' : '+'}1`
+                    )
+            } else {
+                return this
+                    .custom(
+                        `@${posVal}`,
+                        `D=${isNeg ? '-' : ''}A`,
+                    )
+                    .incSP()
+                    .custom(
+                        'A=M-1',
+                        'M=D'
+                    );
+            }
+        }
     }
 
     /** Goto a label */

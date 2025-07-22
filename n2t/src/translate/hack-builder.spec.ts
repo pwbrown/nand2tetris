@@ -52,6 +52,39 @@ describe('Translate - Hack Builder', () => {
         );
     });
 
+    it('should increment the stack pointer by 2', () => {
+        expectAssembly(
+            build().incSP(2),
+            [
+                '@SP',
+                'M=M+1',
+                'M=M+1',
+            ],
+        );
+    });
+
+    it('should increment the stack pointer by a value greater than 2', () => {
+        const tests = [3, 5, 7];
+        for (const test of tests) {
+            expectAssembly(
+                build().incSP(test),
+                [
+                    `@${test}`,
+                    'D=A',
+                    '@SP',
+                    'M=D+M',
+                ],
+            );
+        }
+    });
+
+    it('should throw an error if incSP is invoked with a value that does not increment', () => {
+        const tests = [0, -1, -5];
+        for (const test of tests) {
+            expect(() => build().incSP(test)).toThrow();
+        }
+    });
+
     it('should decrement the stack pointer and assign A to new pointer value', () => {
         expectAssembly(
             build().decSP(),
@@ -184,15 +217,25 @@ describe('Translate - Hack Builder', () => {
         );
     });
 
+    it('should put the value in the D register into the dereferenced pointer value', () => {
+        expectAssembly(
+            build().dToPtr('myLabel'),
+            [
+                '@myLabel',
+                'A=M',
+                'M=D',
+            ],
+        );
+    });
+
     it('should push the D register onto the stack', () => {
         expectAssembly(
             build().pushD(),
             [
                 '@SP',
-                'A=M',
-                'M=D',
-                '@SP',
                 'M=M+1',
+                'A=M-1',
+                'M=D',
             ],
         );
     });
@@ -215,88 +258,8 @@ describe('Translate - Hack Builder', () => {
                 '@myValue',
                 'D=M',
                 '@SP',
-                'A=M',
-                'M=D',
-                '@SP',
                 'M=M+1',
-            ],
-        );
-    });
-
-    it('should assign 0, 1, or -1 to a label value', () => {
-        const tests = [0, 1, -1];
-
-        for (const test of tests) {
-            expectAssembly(
-                build().intToLbl(test, 'myValue'),
-                [
-                    '@myValue',
-                    `M=${test}`,
-                ],
-            );
-        }
-    });
-
-    it('should assign a positive value greater than 1 to a label value', () => {
-        expectAssembly(
-            build().intToLbl(4, 'myValue'),
-            [
-                '@4',
-                'D=A',
-                '@myValue',
-                'M=D',
-            ],
-        );
-    });
-
-    it('should assign a negative value less than -1 to a label value', () => {
-        expectAssembly(
-            build().intToLbl(-4, 'myValue'),
-            [
-                '@4',
-                'D=-A',
-                '@myValue',
-                'M=D',
-            ],
-        );
-    });
-
-    it('should assign 0, 1, or -1 to a pointer value', () => {
-        const tests = [0, 1, -1];
-
-        for (const test of tests) {
-            expectAssembly(
-                build().intToPtr(test, 'myValue'),
-                [
-                    '@myValue',
-                    'A=M',
-                    `M=${test}`,
-                ],
-            );
-        }
-    });
-
-    it('should assign a positive value greater than 1 to a pointer value', () => {
-        expectAssembly(
-            build().intToPtr(4, 'myValue'),
-            [
-                '@4',
-                'D=A',
-                '@myValue',
-                'A=M',
-                'M=D',
-            ],
-        );
-    });
-
-    it('should assign a negative value less than -1 to a pointer value', () => {
-        expectAssembly(
-            build().intToPtr(-4, 'myValue'),
-            [
-                '@4',
-                'D=-A',
-                '@myValue',
-                'A=M',
+                'A=M-1',
                 'M=D',
             ],
         );
@@ -310,43 +273,50 @@ describe('Translate - Hack Builder', () => {
                 build().pushInt(test),
                 [
                     '@SP',
-                    'A=M',
-                    `M=${test}`,
-                    '@SP',
                     'M=M+1',
+                    'A=M-1',
+                    `M=${test}`,
                 ],
             );
         }
     });
 
-    it('should push a larger positive integer onto the stack', () => {
-        expectAssembly(
-            build().pushInt(4),
-            [
-                '@4',
-                'D=A',
-                '@SP',
-                'A=M',
-                'M=D',
-                '@SP',
-                'M=M+1',
-            ],
-        );
+    it('should push a 2 onto the stack', () => {
+        const tests = [-2, 2];
+
+        for (const test of tests) {
+            const isNeg = test < 0;
+            expectAssembly(
+                build().pushInt(test),
+                [
+                    '@SP',
+                    'M=M+1',
+                    'A=M-1',
+                    `M=${isNeg ? '-1' : '1'}`,
+                    `M=M${isNeg ? '-' : '+'}1`,
+                ],
+            );
+        }
     });
 
-    it('should push a larger negative integer onto the stack', () => {
-        expectAssembly(
-            build().pushInt(-4),
-            [
-                '@4',
-                'D=-A',
-                '@SP',
-                'A=M',
-                'M=D',
-                '@SP',
-                'M=M+1',
-            ],
-        );
+    it('should push a larger integer onto the stack', () => {
+        const tests = [5, -6, 10, -4];
+        
+        for (const test of tests) {
+            const posTest = Math.abs(test);
+            const isNeg = test < 0;
+            expectAssembly(
+                build().pushInt(test),
+                [
+                    `@${posTest}`,
+                    `D=${isNeg ? '-' : ''}A`,
+                    '@SP',
+                    'M=M+1',
+                    'A=M-1',
+                    `M=D`,                
+                ],
+            );
+        }
     });
 
     it('should perform an unconditional goto', () => {
