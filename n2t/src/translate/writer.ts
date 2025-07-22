@@ -11,7 +11,7 @@ import { MEMORY_SEGMENT } from './constants';
 import { build, HackBuilder } from './hack-builder';
 
 /** Maximum pop operand value to use for direct addressing (this is just an optimization) */
-const POP_DIRECT_ADDR_MAX = 2;
+const POP_DIRECT_ADDR_MAX = 7;
 
 /** Register to use when storing pop command addresses */
 const POP_TEMP_REGISTER = 13;
@@ -166,15 +166,32 @@ export class Writer extends BaseWriter {
         this.buildAndWrite((b) => b
             .comment('Bootstrap code', '')
             .comment('initialize stack pointer to address 256')
-            .intToLbl(256, 'SP')
-            .comment('initialize LCL as -1')
-            .intToLbl(-1, 'LCL')
-            .comment('initialize ARG as -2')
-            .intToLbl(-2, 'ARG')
-            .comment('initialize THIS as -3')
-            .intToLbl(-3, 'THIS')
-            .comment('initialize THAT as -4')
-            .intToLbl(-4, 'THAT')
+            .custom(
+                '@256',
+                'D=A',
+                '@SP',
+                'M=D',
+            )
+            .comment('initialize LCL to -1')
+            .custom(
+                '@LCL',
+                'DM=-1',
+            )
+            .comment('initialize ARG to -2')
+            .custom(
+                '@ARG',
+                'DM=D-1',
+            )
+            .comment('initialize THIS to -3')
+            .custom(
+                '@THIS',
+                'DM=D-1',
+            )
+            .comment('initialize THAT to -4')
+            .custom(
+                '@THAT',
+                'M=D-1',
+            )
         );
         this.writeCallCommand({
             type: 'Call',
@@ -539,10 +556,17 @@ export class Writer extends BaseWriter {
             b.comment('set function label')
                 .label(command.name);
             if (command.local > 0) {
-                b.comment(`push 0 for the number of local variables (${command.local})`)
-                    .custom('D=0');
+                b.comment('increment stack pointer for the number of local variables')
+                    .incSP(command.local);
+                
+                b.comment(`set previous stack values to 0 for the number of local variables (${command.local})`);
                 for (let i = 0; i < command.local; i += 1) {
-                    b.pushD();
+                    if (i === 0) {
+                        b.custom('A=M-1');
+                    } else {
+                        b.custom('A=A-1');
+                    }
+                    b.custom('M=0');
                 }
             }
             return b;
